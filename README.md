@@ -26,3 +26,33 @@ Password Mysql:  PWBiblioteca2007
 
 ## Whiteboard
 <a href="https://lucid.app/lucidspark/ae61a960-262b-4a02-baf6-5c5d7e4cf0a0/edit?viewport_loc=-1013%2C39%2C2048%2C975%2C0_0&invitationId=inv_6856dabe-63fd-4872-aab1-c89c3f2e529d">Lucidspark</a>
+
+# Epic 1
+### Creazione del Database
+- Definizione necessità database
+- Diagramma ER
+- SQL
+  
+### Creazione Account
+- Form di signin
+- Validazione account via email di conferma
+
+### Login
+- Form di login
+- Gestione delle sesioni
+
+### Area personale
+- Pagina profilo di ogni utente
+- Gestione delle funzionalità della pagina in base alla sessione loggata
+- Funzini di gestione profilo e di modifica delle informazioni profilo
+
+### Tessera utente
+- Creazione pdf con la card
+- Creazione codice a barre
+- Scansione codice a barre
+
+### Sviluppo sito web php
+- Grafica sito web
+- Sviluppo pagine Index, Login/Signup, Profilo utente
+- Hosting web server
+- Connessione al database
