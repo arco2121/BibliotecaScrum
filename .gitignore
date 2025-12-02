@@ -2,6 +2,7 @@
 composer.json
 composer.lock
 .git
+.gitignore
 webook.php
 /vendor
 
