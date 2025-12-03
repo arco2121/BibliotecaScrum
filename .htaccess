@@ -1,5 +1,14 @@
 RewriteEngine On
 RewriteBase /BibliotecaScrum/
 
-# Tutto il resto mandalo a router.php, MA NON CAMBIARE L'URL NEL BROWSER
+# 1. PROTEZIONE: Se la richiesta è dentro la cartella "pages/", servila direttamente.
+# Questo permette di caricare CSS, JS o immagini se sono lì dentro.
+RewriteRule ^pages/ - [L]
+
+# 2. PROTEZIONE: Permetti l'esecuzione del router stesso (altrimenti va in loop).
+RewriteRule ^router\.php$ - [L]
+
+# 3. BLOCCO: Tutto il resto viene catturato qui e inviato al router.
+# Anche se un file esiste (es. "webhook.php" nella root), il browser NON potrà aprirlo direttamente.
+# Sarà il router.php a decidere se includerlo o mostrare 404.
 RewriteRule ^(.*)$ router.php [QSA,L]
