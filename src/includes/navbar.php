@@ -24,7 +24,7 @@ if (isset($_SESSION['nome_utente'])) {
 
 <nav class="navbar">
     <div class="navbar_left">
-        <a href="/BibliotecaScrum/" class="navbar_link_img instrument-sans-semibold" id="navbar_logo">
+        <a href="./" class="navbar_link_img instrument-sans-semibold" id="navbar_logo">
             <img src="/BibliotecaScrum/public/assets/logo_ligth.png" class="navbar_logo" alt="Biblioteca Scrum">
         </a>
         <a href="/BibliotecaScrum/search_page.html" class="navbar_search_mobile_link">
@@ -48,9 +48,16 @@ if (isset($_SESSION['nome_utente'])) {
             <a href="#" class="navbar_link_img instrument-sans-semibold">
                 <img src="/BibliotecaScrum/public/assets/icon_notification.png" alt="notifica" class="navbar_icon">
             </a>
-            <a href="#" class="navbar_link_img instrument-sans-semibold" id="navbar_pfp">
-                <img src="/BibliotecaScrum/public/assets/base_pfp.png" alt="pfp" class="navbar_icon navbar_pfp">
-            </a>
+
+            <?php
+            if (isset($_SESSION['logged']) && $_SESSION['logged'] === true){?>
+                    <a href="#" class="navbar_link_img instrument-sans-semibold" id="navbar_pfp">
+                        <img src="/BibliotecaScrum/public/assets/base_pfp.png" alt="pfp" class="navbar_icon navbar_pfp">
+                    </a>
+            <?php    } else { ?>
+                <a href="./login" class="navbar_link instrument-sans-semibold text_underline">Log-In</a>
+            <?php     } ?>
+
         </div>
 
     </div>

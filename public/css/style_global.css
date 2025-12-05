@@ -73,6 +73,10 @@ a {
           "wdth" 95;
 }
 
+.text_underline {
+    text-decoration: underline;
+}
+
 /* Body */
 * {
     transition: all 0.15s ease-in;
@@ -280,5 +284,117 @@ body {
 
     .navbar_pfp, .navbar_link_img {
         height: 25px;
+    }
+}
+
+
+/* Footer */
+.footer {
+    background-color: var(--color_accent_dark);
+    color: var(--color_accent_ligth);
+    padding: 20px 8px;
+    border-radius: 5px;
+    margin-top: 2rem;
+}
+
+.footer_content {
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.footer_left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.footer_title {
+    font-size: 30px;
+    margin: 0;
+    padding: 0;
+    color: var(--color_accent_ligth_low);
+}
+
+.footer_copyright {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-top: 5px;
+}
+
+.footer_rigth {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    text-align: right;
+    margin-left: auto;
+}
+
+.footer_links {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.footer_link {
+    color: var(--color_accent_ligth_low);
+    text-decoration: none;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.footer_link:hover {
+    color: var(--color_accent_ligth_low);
+}
+
+.footer_separator {
+    margin: 0 8px;
+    opacity: 0.8;
+}
+
+.footer_icon {
+    height: 50px;
+    width: auto;
+    margin-left: 20px;
+    opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+    .footer {
+        padding: 15px 10px;
+    }
+
+    .footer_content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .footer_left {
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .footer_rigth {
+        width: 100%;
+        justify-content: center;
+        margin-left: 0;
+    }
+
+    .footer_links {
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+
+    .footer_icon {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+
+    .footer_title {
+        font-size: 26px;
     }
 }
