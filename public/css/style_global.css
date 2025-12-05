@@ -1,0 +1,139 @@
+/* CSS RESET */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+    display: block;
+}
+body {
+    line-height: 1;
+}
+ol, ul {
+    list-style: none;
+}
+blockquote, q {
+    quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+    content: '';
+    content: none;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+a {
+    text-decoration: none;
+}
+
+
+/* Variabili Globali */
+:root {
+    --color_background_dark: #eae3d2;
+    --color_background_ligth: #f8f4e9;
+    --color_accent_dark: #3f5135;
+    --color_accent_ligth: #c5e0b7;
+    --color_accent_ligth_low: #aac99a;
+    --color_accent_medium: #819e71;
+}
+
+.young-serif-regular {
+    font-family: "Young Serif", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.instrument-sans-semibold {
+  font-family: "Instrument Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+  font-variation-settings:
+          "wdth" 95;
+}
+
+/* Body */
+* {
+    transition: all 0.15s ease-in;
+}
+body {
+    padding: 8px;
+    background-color: var(--color_background_dark);
+}
+
+.contents {
+    padding: 8px;
+    border-radius: 8px;
+    background-color: var(--color_background_ligth);
+}
+
+
+/* Navbar */
+.navbar {
+    background-color: var(--color_accent_dark);
+    color: var(--color_accent_ligth);
+
+    height: 32px;
+    margin-bottom: 1rem;
+    padding: 10px;
+    border-radius: 5px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    flex-direction: row;
+}
+
+.navbar_rigth {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    align-content: center;
+    height: 32px;
+}
+
+.navbar_rigth a {
+    margin: 0 0.5rem;
+}
+
+.navbar_link {
+    color: var(--color_accent_ligth);
+}
+
+.navbar_link:hover {
+    color: var(--color_accent_ligth_low);
+}
+
+.navbar_link:active {
+    color: var(--color_accent_medium);
+}
+
+.navbar_link_img {
+    height: 100%;
+}
+
+.navbar_icon {
+    height: 100%;
+}
