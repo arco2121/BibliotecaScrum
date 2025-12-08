@@ -1,49 +1,97 @@
 <?php
 session_start();
+require_once 'db_config.php';
 
-// Redirect se già loggato
 if (isset($_SESSION['logged']) && $_SESSION['logged'] === true) {
     header("Location: ./");
     exit;
 }
 
-// Inizializziamo la variabile per gestire errori locali
-$status = null; 
+$error_msg = ""; 
 
-// LOGICA DI LOGIN
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $user = $_POST['username'] ?? '';
-    $pass = $_POST['password'] ?? '';
+    $user_input = trim($_POST['username'] ?? '');
+    $pass_input = trim($_POST['password'] ?? '');
 
-    if ($user === 'admin' && $pass === '12345') {
-        session_regenerate_id(true);
-        $_SESSION['logged'] = true;
-        setcookie('auth', 'ok', time() + 604800, '/', '', false, true);
-        $_SESSION['status'] = 'Login riuscito';
-        header("Location: ./");
-        exit;
+    if (isset($pdo)) {
+        try {
+            $password_hash = hash('sha256', $pass_input); 
+
+            $stmt = $pdo->prepare("CALL CheckLoginUser(?, ?, @risultato)");
+            
+            $stmt->bindParam(1, $user_input, PDO::PARAM_STR);
+            $stmt->bindParam(2, $password_hash, PDO::PARAM_STR); 
+            $stmt->execute();
+            
+            $stmt->closeCursor();
+
+            $row = $pdo->query("SELECT @risultato as esito")->fetch(PDO::FETCH_ASSOC);
+            $esito = $row['esito'];
+
+            if ($esito === 'utente_non_trovato') {
+                $error_msg = "Utente non trovato.";
+            } 
+            elseif ($esito === 'password_sbagliata') {
+                $error_msg = "Password errata.";
+            } 
+            elseif ($esito === 'blocked:1') {
+                $error_msg = "Il tuo account è stato bloccato da un amministratore.";
+            } 
+            elseif ($esito === 'blocked:2') {
+                $error_msg = "Troppi tentativi falliti. Riprova tra 15 minuti.";
+            } 
+            else {
+                session_regenerate_id(true); 
+                
+                $_SESSION['logged'] = true;
+                $_SESSION['codice_utente'] = $esito; 
+                $_SESSION['username'] = $user_input; 
+                
+                setcookie('auth', 'ok', time() + 604800, '/', '', false, true);
+                
+                header("Location: ./"); 
+                exit;
+            }
+
+        } catch (PDOException $e) {
+            $error_msg = "Errore di sistema: " . $e->getMessage();
+        }
     } else {
-        $status = 'Login non riuscito';
-        $_SESSION['status'] = 'Login non riuscito';
+        $error_msg = "Errore di connessione al Database.";
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
+    <meta charset="UTF-8">
     <title>Login</title>
+    <style>
+        .error { color: red; background-color: #fdd; padding: 10px; border: 1px solid red; margin-bottom: 15px; }
+        .container { padding: 20px; max-width: 400px; margin: auto; }
+        input { display: block; width: 100%; margin-bottom: 10px; padding: 8px; }
+        button { padding: 10px 20px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
     <?php include 'navbar.php'; ?>
 
-    <div style="padding: 20px;">
+    <div class="container">
         <h2>Accedi</h2>
-        <div>per test: admin 12345 </div>                                            <!-- DA RIMUOVERE -->
+
+        <?php if (!empty($error_msg)): ?>
+            <div class="error"><?php echo htmlspecialchars($error_msg); ?></div>
+        <?php endif; ?>
+
         <form method="post">
-            <input name="username" type="text" placeholder="Username" required>
+            <label>Username, Email o Codice Fiscale</label>
+            <input name="username" type="text" placeholder="Inserisci credenziali" required value="<?php echo htmlspecialchars($user_input ?? ''); ?>">
+            
+            <label>Password</label>
             <input name="password" type="password" placeholder="Password" required>
+            
             <button type="submit">Login</button>
         </form>
 
