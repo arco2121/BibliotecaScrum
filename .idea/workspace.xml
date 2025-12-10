@@ -4,11 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="294b6b77-9b33-4725-90e1-f1f8aeffe634" name="Changes" comment="Sistemo il db config">
-      <change beforePath="$PROJECT_DIR$/.idea/BibliotecaScrum.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/BibliotecaScrum.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/php.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/php.xml" afterDir="false" />
+    <list default="true" id="294b6b77-9b33-4725-90e1-f1f8aeffe634" name="Changes" comment="First implementation of signUp">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pages/signup.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/signup.php" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pages/utility/codiceFiscaleMethods.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/utility/codiceFiscaleMethods.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/router.php" beforeDir="false" afterPath="$PROJECT_DIR$/router.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/includes/codiceFiscaleMethods.php" beforeDir="false" afterPath="$PROJECT_DIR$/src/includes/codiceFiscaleMethods.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,6 +89,8 @@
       <updated>1765012614699</updated>
       <workItem from="1765012616591" duration="754000" />
       <workItem from="1765013415652" duration="2491000" />
+      <workItem from="1765368190370" duration="350000" />
+      <workItem from="1765368705527" duration="2463000" />
     </task>
     <task id="LOCAL-00001" summary="Sistemo il db config">
       <option name="closed" value="true" />
@@ -98,7 +100,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765017824695</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="First implementation of signUp">
+      <option name="closed" value="true" />
+      <created>1765368315186</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1765368315186</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -106,6 +116,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Sistemo il db config" />
-    <option name="LAST_COMMIT_MESSAGE" value="Sistemo il db config" />
+    <MESSAGE value="First implementation of signUp" />
+    <option name="LAST_COMMIT_MESSAGE" value="First implementation of signUp" />
   </component>
 </project>
