@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "utility/codiceFiscaleMethods.php";
+require_once "./src/includes/codiceFiscaleMethods.php";
 require_once 'db_config.php';
 
 // Redirect se già loggato
