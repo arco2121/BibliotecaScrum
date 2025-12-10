@@ -76,7 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-    <?php include 'navbar.php'; ?>
+    <?php include './src/includes/header.php'; ?>
+    <?php include './src/includes/navbar.php'; ?>
 
     <div class="container">
         <h2>Accedi</h2>
@@ -98,6 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <br>
         <a href="./signup">Non hai un account? Registrati</a>
     </div>
+
+    <?php include './src/includes/footer.php'; ?>
 
 </body>
 </html>
