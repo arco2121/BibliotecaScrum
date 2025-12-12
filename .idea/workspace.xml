@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="294b6b77-9b33-4725-90e1-f1f8aeffe634" name="Changes" comment="Sistemato la pagina si signup, con collegamenti corretti privi di GET">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pages/signup.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/signup.php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pages/index.php" beforeDir="false" afterPath="$PROJECT_DIR$/pages/index.php" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,8 +27,8 @@
 }</component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/arco2121/BibliotecaScrum&quot;,
-    &quot;accountId&quot;: &quot;57b78257-17a1-491b-a2e9-583d4da9e8b6&quot;
+    &quot;url&quot;: &quot;https://github.com/CobraIvi11/BibliotecaScrum&quot;,
+    &quot;accountId&quot;: &quot;4af8c43f-b691-464f-873e-e5cd22d07758&quot;
   }
 }</component>
   <component name="PhpWorkspaceProjectConfiguration" interpreter_name="$PROJECT_DIR$/../../php/php.exe">
@@ -50,23 +50,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/xampp/htdocs/BibliotecaScrum",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "editor.preferences.folding",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/xampp/htdocs/bibliotecaScrum&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.folding&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -89,6 +89,12 @@
       <workItem from="1765013415652" duration="2491000" />
       <workItem from="1765368190370" duration="350000" />
       <workItem from="1765368705527" duration="10001000" />
+      <workItem from="1765532544278" duration="48000" />
+      <workItem from="1765532611543" duration="109000" />
+      <workItem from="1765532750565" duration="360000" />
+      <workItem from="1765533115232" duration="926000" />
+      <workItem from="1765534091096" duration="86000" />
+      <workItem from="1765534185182" duration="3405000" />
     </task>
     <task id="LOCAL-00001" summary="Sistemo il db config">
       <option name="closed" value="true" />

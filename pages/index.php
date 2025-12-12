@@ -1,20 +1,13 @@
 <?php
-// 1. IMPORTANTE: Avviamo la sessione per vedere se l'utente è loggato
 session_start();
-
-// Includiamo la configurazione
 require_once 'db_config.php';
 
-// Inizializziamo il messaggio per evitare errori "Undefined variable"
-$messaggio_db = "";
+// Nome visitatore
+$nome_visitatore = isset($_SESSION['username']) ? $_SESSION['username'] . ' (Logged)' : 'Utente Web';
 
-// --- 1. TEST SCRITTURA (INSERT) ---
-// Eseguiamo l'INSERT solo se la connessione ($pdo) esiste
+// Registriamo il visitatore
 if (isset($pdo)) {
     try {
-        // Se l'utente è loggato, usiamo il suo nome nel DB, altrimenti "Utente Web"
-        $nome_visitatore = isset($_SESSION['username']) ? $_SESSION['username'] . ' (Logged)' : 'Utente Web';
-
         $stmt = $pdo->prepare("INSERT INTO visitatori (nome) VALUES (:nome)");
         $stmt->execute(['nome' => $nome_visitatore]);
         $messaggio_db = "Nuovo accesso registrato nel DB!";
@@ -27,18 +20,50 @@ if (isset($pdo)) {
     $messaggio_db = "Connessione al Database non riuscita (controlla db_config.php).";
     $class_messaggio = "error";
 }
-?>
 
+// Recuperiamo i libri consigliati in base all'utente loggato
+if (isset($pdo)) {
+    try {
+        if (isset($_SESSION['username'])) {
+            // Se l'utente è loggato, puoi filtrare i libri consigliati
+            $username = $_SESSION['username'];
+            $stmt = $pdo->prepare("SELECT * FROM libri WHERE consigliato_per = :username");
+            $stmt->execute(['username' => $username]);
+        } else {
+            // Se non è loggato, mostra tutti i libri
+            $stmt = $pdo->prepare("SELECT * FROM libri");
+            $stmt->execute();
+        }
+        $libri = $stmt->fetchAll();
+    } catch (PDOException $e) {
+        $libri = [];
+        $messaggio_db = "Errore caricamento libri: " . $e->getMessage();
+        $class_messaggio = "error";
+    }
+} else {
+    $libri = [];
+}
+
+?>
 
 <?php require_once './src/includes/header.php'; ?>
 <?php require_once './src/includes/navbar.php'; ?>
 
-<!-- INIZIO DEL BODY -->
-
 <div class="page_contents">
-    Body
-</div>
+    <?php if (!empty($messaggio_db)): ?>
+        <div class="<?= $class_messaggio ?>"><?= htmlspecialchars($messaggio_db) ?></div>
+    <?php endif; ?>
 
-<!-- FINE DEL BODY -->
+    <?php if (!empty($libri)): ?>
+        <?php foreach ($libri as $libro): ?>
+            <div class="libro">
+                <h3><?= htmlspecialchars($libro['titolo']) ?></h3>
+                <p><?= htmlspecialchars($libro['descrizione']) ?></p>
+            </div>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p>Nessun libro disponibile al momento.</p>
+    <?php endif; ?>
+</div>
 
 <?php require_once './src/includes/footer.php'; ?>
