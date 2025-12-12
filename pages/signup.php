@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // uso password_hash (più sicuro). Se vuoi SHA256: $hash = hash('sha256', $password);
             $hash = password_hash($password, PASSWORD_DEFAULT);
 
-            $stmt = $pdo->prepare("INSERT INTO utente 
+            $stmt = $pdo->prepare("INSERT INTO utenti 
                 (codice_alfanumerico, username, nome, cognome, email, codice_fiscale, password_hash, email_confermata, data_creazione) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, NOW())");
             $stmt->execute([$id, $username, $nome, $cognome, $email, $cf_finale, $hash]);
