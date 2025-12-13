@@ -38,13 +38,6 @@
   <component name="GitHubPullRequestSearchHistory">{
   &quot;lastFilter&quot;: {}
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/CobraIvi11/BibliotecaScrum.git&quot;,
-    &quot;accountId&quot;: &quot;71838f21-0103-45be-b8f7-30f6d110f47f&quot;
-  }
-}</component>
-  <component name="PhpWorkspaceProjectConfiguration" interpreter_name="$USER_HOME$/Desktop/XAMPP/php/php.exe">
     <include_path>
       <path value="$PROJECT_DIR$/vendor/composer" />
       <path value="$PROJECT_DIR$/vendor/vlucas/phpdotenv" />
@@ -59,6 +52,9 @@
   &quot;associatedIndex&quot;: 0
 }</component>
   <component name="ProjectId" id="36Sv6sl8ufXMTGa8HzQlWvrByNP" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />

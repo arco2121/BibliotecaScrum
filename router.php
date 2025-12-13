@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 $whitelist = [
     '/'        => 'pages/index.php',
     '/home'    => 'pages/index.php',
@@ -11,9 +15,9 @@ $whitelist = [
     './contatti' => 'pages/contatti.php',
     './privacy'   => 'pages/privacy.php',
     './terms'     => 'pages/terms.php',
-    './info_libro'=> 'pages/info_libro.php',
     '/libro_info' => 'pages/libro_info.php',
-    '/libro_info.php' => 'pages/libro_info.php',
+    '/verifica' => 'pages/verifica.php',
+    '/blank' => 'pages/blankpage.php',
 ];
 
 
