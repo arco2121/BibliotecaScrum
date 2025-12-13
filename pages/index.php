@@ -4,287 +4,80 @@ require_once 'db_config.php';
 
 $messaggio_db = "";
 
-/* ---------------- GET GOOGLE BOOK DATA ---------------- */
-function getGoogleBookData($isbn) {
-    static $cache = [];
-    if (isset($cache[$isbn])) return $cache[$isbn];
+// Recupera codice utente se loggato
+$codice = $_SESSION['codice_utente'] ?? null;
 
-    $url = "https://www.googleapis.com/books/v1/volumes?q=isbn:" . urlencode($isbn);
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-    $json = curl_exec($ch);
-    curl_close($ch);
-
-    if (!$json) return null;
-
-    $data = json_decode($json, true);
-    if (!isset($data['items'][0]['volumeInfo'])) return null;
-
-    $info = $data['items'][0]['volumeInfo'];
-
-    $description = $info['description'] ?? 'Descrizione non disponibile';
-    $description = strip_tags($description);
-    $description = html_entity_decode($description, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $description = mb_substr($description, 0, 1000);
-
-    $cache[$isbn] = [
-            'title' => $info['title'] ?? '',
-            'authors' => $info['authors'] ?? [],
-            'description' => $description,
-            'publisher' => $info['publisher'] ?? '',
-            'publishedDate' => $info['publishedDate'] ?? '',
-            'categories' => $info['categories'] ?? [],
-            'cover' => $info['imageLinks']['thumbnail'] ?? 'src/assets/placeholder.jpg'
-    ];
-    return $cache[$isbn];
-}
-
-/* ---------------- SYNC BOOK DATA ---------------- */
-function syncBookData($pdo, $isbn) {
-    $bookData = getGoogleBookData($isbn);
-    if (!$bookData) return false;
-
-    preg_match('/\d{4}/', $bookData['publishedDate'], $m);
-    $year = $m[0] ?? null;
-
-    try {
-        $pdo->beginTransaction();
-
-        /* COPIE */
-        $stmt = $pdo->prepare("SELECT copertina FROM copie WHERE isbn = ?");
-        $stmt->execute([$isbn]);
-        $current_cover = $stmt->fetchColumn();
-        $cover = $current_cover ?: $bookData['cover'];
-
-        $stmt = $pdo->prepare("
-            INSERT INTO copie (isbn, ean, condizione, disponibile, anno_pubblicazione, conferma_anno_pubblicazione, editore, copertina)
-            VALUES (?, ?, 0, 1, ?, 1, ?, ?)
-            ON DUPLICATE KEY UPDATE 
-                anno_pubblicazione = VALUES(anno_pubblicazione),
-                editore = VALUES(editore),
-                copertina = VALUES(copertina)
-        ");
-        $stmt->execute([$isbn, substr($isbn,0,3), $year, $bookData['publisher'], $cover]);
-
-        /* LIBRI */
-        $stmt = $pdo->prepare("
-            INSERT INTO libri (isbn, titolo, descrizione)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE 
-                titolo = VALUES(titolo),
-                descrizione = VALUES(descrizione)
-        ");
-        $stmt->execute([$isbn, $bookData['title'], $bookData['description']]);
-
-        /* AUTORI */
-        foreach ($bookData['authors'] as $author) {
-            $parts = explode(' ', trim($author));
-            $cognome = array_pop($parts);
-            $nome = implode(' ', $parts);
-
-            $stmt = $pdo->prepare("SELECT id_autore FROM autori WHERE nome = ? AND cognome = ?");
-            $stmt->execute([$nome, $cognome]);
-            $id_autore = $stmt->fetchColumn();
-
-            if (!$id_autore) {
-                $stmt = $pdo->prepare("INSERT INTO autori (nome, cognome) VALUES (?, ?)");
-                $stmt->execute([$nome, $cognome]);
-                $id_autore = $pdo->lastInsertId();
-            }
-
-            $stmt = $pdo->prepare("INSERT IGNORE INTO autore_libro (id_autore, isbn) VALUES (?, ?)");
-            $stmt->execute([$id_autore, $isbn]);
-        }
-
-        /* CATEGORIE */
-        foreach ($bookData['categories'] as $cat) {
-            $stmt = $pdo->prepare("SELECT id_categoria FROM categorie WHERE categoria = ?");
-            $stmt->execute([$cat]);
-            $id_cat = $stmt->fetchColumn();
-
-            if (!$id_cat) {
-                $stmt = $pdo->prepare("INSERT INTO categorie (categoria) VALUES (?)");
-                $stmt->execute([$cat]);
-                $id_cat = $pdo->lastInsertId();
-            }
-
-            $stmt = $pdo->prepare("INSERT IGNORE INTO libro_categoria (isbn, id_categoria) VALUES (?, ?)");
-            $stmt->execute([$isbn, $id_cat]);
-        }
-
-        $pdo->commit();
-        return true;
-
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        $GLOBALS['messaggio_db'] .= "Errore PDO: " . $e->getMessage();
-        return false;
-    }
-}
-
-/* ---------------- RENDER COVER ---------------- */
-function renderBookCover($book) {
-    $cover = $book['copertina'] ?? 'src/assets/placeholder.jpg';
-    $isbn = $book['isbn'] ?? '';
-    ob_start(); ?>
-    <div class="card cover-only">
-        <a href="libro_info.php?isbn=<?= htmlspecialchars($isbn) ?>">
-            <img src="<?= htmlspecialchars($cover) ?>" alt="<?= htmlspecialchars($book['titolo'] ?? 'Libro') ?>">
-        </a>
-    </div>
-    <?php
-    return ob_get_clean();
-}
-
-
-/* ---------------- SYNC ALL ISBN ---------------- */
-$stmt = $pdo->query("SELECT isbn FROM libri");
-$isbns = $stmt->fetchAll(PDO::FETCH_COLUMN);
-foreach ($isbns as $isbn) { syncBookData($pdo, $isbn); }
-
-/* ---------------- ULTIME USCITE ---------------- */
+// ---------------- POPOLARI ----------------
 $stmt = $pdo->query("
-    SELECT l.*, c.copertina 
-    FROM libri l 
-    JOIN copie c ON l.isbn = c.isbn
-    ORDER BY l.isbn DESC
-");
-$ultime_uscite = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-/* ---------------- PRESTITI ATTIVI ---------------- */
-$prestiti_attivi = [];
-$codice = null;
-
-if (!empty($_SESSION['user_id'])) {
-    $stmt = $pdo->prepare("SELECT codice_alfanumerico FROM utenti WHERE id_utente = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $codice = $stmt->fetchColumn();
-
-    if ($codice) {
-        $stmt = $pdo->prepare("
-            SELECT l.*, c.copertina, p.data_prestito, p.data_scadenza
-            FROM prestiti p
-            JOIN copie c ON p.id_copia = c.id_copia
-            JOIN libri l ON l.isbn = c.isbn
-            WHERE p.codice_alfanumerico = ?
-              AND p.data_restituzione IS NULL
-        ");
-        $stmt->execute([$codice]);
-        $prestiti_attivi = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-}
-
-/* ---------------- LIBRI TOP VOTATI ---------------- */
-$stmt = $pdo->query("
-    SELECT l.*, c.copertina, AVG(r.voto) AS media_voto
+    SELECT l.isbn
     FROM libri l
-    JOIN copie c ON l.isbn = c.isbn
     JOIN recensioni r ON r.isbn = l.isbn
     GROUP BY l.isbn
-    ORDER BY media_voto DESC
+    ORDER BY AVG(r.voto) DESC
     LIMIT 10
 ");
-$top_votati = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$popolari = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-/* ---------------- PRESTITI ATTIVI ---------------- */
+// ---------------- CATEGORIE POPOLARI ----------------
+$catPopolari = [];
+$stmt = $pdo->query("SELECT id_categoria, categoria FROM categorie LIMIT 5");
+$catPopolari = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$categoriePopolari = [];
+foreach ($catPopolari as $cat) {
+    $stmt = $pdo->prepare("
+        SELECT l.isbn
+        FROM libri l
+        JOIN libro_categoria lc ON lc.isbn = l.isbn
+        WHERE lc.id_categoria = ?
+        LIMIT 10
+    ");
+    $stmt->execute([$cat['id_categoria']]);
+    $categoriePopolari[$cat['categoria']] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ---------------- PRESTITI ATTIVI ----------------
 $prestiti_attivi = [];
-$codice = $_SESSION['codice_utente'] ?? null;   // <-- QUI USIAMO IL CODICE UTENTE
-
 if ($codice) {
     $stmt = $pdo->prepare("
-        SELECT l.*, c.copertina, p.data_prestito, p.data_scadenza
+        SELECT c.isbn
         FROM prestiti p
         JOIN copie c ON p.id_copia = c.id_copia
-        JOIN libri l ON l.isbn = c.isbn
-        WHERE p.codice_alfanumerico = ?
-          AND p.data_restituzione IS NULL
+        WHERE p.codice_alfanumerico = ? AND p.data_restituzione IS NULL
     ");
     $stmt->execute([$codice]);
     $prestiti_attivi = $stmt->fetchAll(PDO::FETCH_ASSOC);
 }
 
-/* ---------------- CONSIGLIATI PER L’UTENTE ---------------- */
-/* ---------------- CONSIGLIATI PER L’UTENTE ---------------- */
-$consigliati = [];
-
-if ($codice) {
-    // Prendo le categorie dei libri che l'utente ha preso in prestito
-    $stmt = $pdo->prepare("
-        SELECT DISTINCT lc.id_categoria
-        FROM prestiti p
-        JOIN copie c ON p.id_copia = c.id_copia
-        JOIN libro_categoria lc ON lc.isbn = c.isbn
-        WHERE p.codice_alfanumerico = ?
-    ");
-    $stmt->execute([$codice]);
-    $catIDs = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-    if ($catIDs) {
-        $in = implode(',', array_fill(0, count($catIDs), '?'));
-
-        // Prendo tutti gli ISBN già presi in prestito dall'utente
-        $stmt2 = $pdo->prepare("
-            SELECT c.isbn
-            FROM prestiti p
-            JOIN copie c ON p.id_copia = c.id_copia
-            WHERE p.codice_alfanumerico = ?
-        ");
-        $stmt2->execute([$codice]);
-        $esclusi = $stmt2->fetchAll(PDO::FETCH_COLUMN);
-
-        $esclusi_placeholders = "";
-        if ($esclusi) {
-            $esclusi_placeholders = "AND l.isbn NOT IN (" . implode(',', array_fill(0, count($esclusi), '?')) . ")";
-        }
-
-        // Seleziono libri consigliati basati sulle categorie, escludendo quelli già presi
-        $sql = "
-            SELECT DISTINCT l.*, c.copertina
-            FROM libri l
-            JOIN copie c ON l.isbn = c.isbn
-            JOIN libro_categoria lc ON lc.isbn = l.isbn
-            WHERE lc.id_categoria IN ($in) $esclusi_placeholders
-            ORDER BY RAND()
-            LIMIT 10
-        ";
-        $stmt3 = $pdo->prepare($sql);
-
-        // Parametri per la query
-        $params = array_merge($catIDs, $esclusi ?: []);
-        $stmt3->execute($params);
-        $consigliati = $stmt3->fetchAll(PDO::FETCH_ASSOC);
-    }
-}
-
-
-
+// ---------------- HTML HEADER ----------------
+require './src/includes/header.php';
+require './src/includes/navbar.php';
 ?>
 
-<style>
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(10, 1fr);
-        gap: 12px;
-        width: 100%;
-        justify-items: center;
-    }
 
-    .card.cover-only img {
-        width: 100%;
-        height: auto;
-        object-fit: cover;
-    }
+<style>
+.grid {
+    display: flex;
+    flex-wrap: wrap; /* oppure remove per riga singola scrollabile */
+    gap: 10px;       /* spazio tra le copertine */
+}
+
+.card.cover-only {
+    flex: 0 0 auto;   /* impedisce che la card si riduca */
+    width: 120px;     /* larghezza fissa per le copertine */
+    height: 180px;    /* altezza fissa */
+    overflow: hidden;
+}
+
+.card.cover-only img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* mantiene proporzioni e riempie la card */
+}
 </style>
 
 
-<?php require './src/includes/header.php'; ?>
-<?php require './src/includes/navbar.php'; ?>
-
 <div class="page_contents">
-
     <h1>Home</h1>
 
     <!-- MESSAGGI -->
@@ -298,44 +91,77 @@ if ($codice) {
             <h2>I tuoi prestiti attivi</h2>
             <div class="grid">
                 <?php foreach ($prestiti_attivi as $libro): ?>
-                    <?= renderBookCover($libro) ?>
+                    <div class="card cover-only" data-isbn="<?= $libro['isbn'] ?>">
+                        <img src="src/assets/placeholder.jpg" alt="Libro">
+                    </div>
                 <?php endforeach; ?>
             </div>
         </div>
     <?php endif; ?>
 
-    <!-- ULTIME USCITE -->
+    <!-- POPOLARI -->
     <div class="section">
-        <h2>Ultime uscite</h2>
+        <h2>Libri Popolari</h2>
         <div class="grid">
-            <?php foreach ($ultime_uscite as $libro): ?>
-                <?= renderBookCover($libro) ?>
+            <?php foreach ($popolari as $libro): ?>
+                <div class="card cover-only" data-isbn="<?= $libro['isbn'] ?>">
+                    <img src="src/assets/placeholder.jpg" alt="Libro">
+                </div>
             <?php endforeach; ?>
         </div>
     </div>
 
-    <!-- TOP VOTATI -->
-    <div class="section">
-        <h2>Top votati</h2>
-        <div class="grid">
-            <?php foreach ($top_votati as $libro): ?>
-                <?= renderBookCover($libro) ?>
-            <?php endforeach; ?>
-        </div>
-    </div>
-
-    <!-- CONSIGLIATI -->
-    <?php if ($codice): ?>
+    <!-- CATEGORIE POPOLARI -->
+    <?php foreach ($categoriePopolari as $catName => $libriCat): ?>
         <div class="section">
-            <h2>Consigliati per te</h2>
+            <h2><?= htmlspecialchars($catName) ?></h2>
             <div class="grid">
-                <?php foreach ($consigliati as $libro): ?>
-                    <?= renderBookCover($libro) ?>
-                <?php endforeach; ?>
+                <?php if ($libriCat): ?>
+                    <?php foreach ($libriCat as $libro): ?>
+                        <div class="card cover-only" data-isbn="<?= $libro['isbn'] ?>">
+                            <img src="src/assets/placeholder.jpg" alt="Libro">
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div>Nessun libro</div>
+                <?php endif; ?>
             </div>
         </div>
-    <?php endif; ?>
-
+    <?php endforeach; ?>
 </div>
+
+<script>
+async function fetchCover(isbn) {
+    try {
+        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+        const data = await res.json();
+
+        console.log("Raw API response for ISBN " + isbn, data);
+
+        if (data.items && data.items.length) {
+            for (const item of data.items) {
+                const links = item.volumeInfo?.imageLinks;
+                if (links) {
+                    // Ordine di preferenza: thumbnail > smallThumbnail > small > medium > large > extraLarge
+                    const cover = links.thumbnail || links.smallThumbnail || links.small || links.medium || links.large || links.extraLarge;
+                    if (cover) return cover.replace(/^http:/, 'https:');
+                }
+            }
+        }
+
+        return 'src/assets/placeholder.jpg'; // fallback
+    } catch(e) {
+        console.error('Errore fetch copertina', isbn, e);
+        return 'src/assets/placeholder.jpg';
+    }
+}
+
+// Aggiorna tutte le copertine
+document.querySelectorAll('.card.cover-only').forEach(async card => {
+    const isbn = card.dataset.isbn;
+    const coverUrl = await fetchCover(isbn);
+    card.querySelector('img').src = coverUrl;
+});
+</script>
 
 <?php require './src/includes/footer.php'; ?>
