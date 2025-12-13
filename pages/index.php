@@ -58,21 +58,21 @@ require './src/includes/navbar.php';
 <style>
 .grid {
     display: flex;
-    flex-wrap: wrap; /* oppure remove per riga singola scrollabile */
-    gap: 10px;       /* spazio tra le copertine */
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .card.cover-only {
-    flex: 0 0 auto;   /* impedisce che la card si riduca */
-    width: 120px;     /* larghezza fissa per le copertine */
-    height: 180px;    /* altezza fissa */
+    flex: 0 0 auto;
+    width: 120px;
+    height: 180px;
     overflow: hidden;
 }
 
 .card.cover-only img {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* mantiene proporzioni e riempie la card */
+    object-fit: cover;
 }
 </style>
 

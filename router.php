@@ -17,10 +17,10 @@ $whitelist = [
     '/terms'     => 'pages/terms.php',
     '/libro_info' => 'pages/libro_info.php',
     '/verifica' => 'pages/verifica.php',
-  '/dashboard' => 'pages/dashboard.php',
+    '/dashboard' => 'pages/dashboard.php',
     '/blank' => 'pages/blankpage.php',
 
-
+];
 
 // LOGICA ROUTER
 $request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
