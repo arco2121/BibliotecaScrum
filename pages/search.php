@@ -1,6 +1,7 @@
 <?php
 require_once 'db_config.php';
 
+// Funzione per evidenziare il testo corrispondente alla ricerca
 function highlight_text(?string $text, string $search): string {
     if ($text === null) return '';
     if ($search === '') return $text;
@@ -31,9 +32,11 @@ if (!empty($search_query)) {
         $all_books = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($all_books as $row) {
+            // Libri solo se il titolo contiene il termine di ricerca
             if (stripos($row['titolo'], $search_query) !== false) {
                 $books[$row['isbn']] = $row;
             }
+            // Autori solo se nome o cognome contengono il termine
             if (!empty($row['autore_nome']) && !empty($row['autore_cognome']) &&
                     (stripos($row['autore_nome'], $search_query) !== false || stripos($row['autore_cognome'], $search_query) !== false)) {
                 $authors[$row['isbn']] = $row;
@@ -69,7 +72,7 @@ require './src/includes/navbar.php';
 
     <h2>🔎 Filtri di Ricerca</h2>
 
-    <!-- Sezione pulsanti -->
+    <!-- Pulsanti per selezionare la sezione da visualizzare -->
     <div style="margin-bottom:15px;">
         <button type="button" id="btn_books" class="section_btn active">Libri</button>
         <button type="button" id="btn_users" class="section_btn">Utenti</button>
@@ -93,7 +96,7 @@ require './src/includes/navbar.php';
 
     <hr>
 
-    <!-- LIBRI -->
+    <!-- SEZIONE LIBRI -->
     <div id="section_books">
         <h1>Risultati Libri</h1>
         <p>Trovati <strong id="results_count_books"><?= count($books) ?></strong> libri per <strong><?= $search_query ?></strong></p>
@@ -137,7 +140,7 @@ require './src/includes/navbar.php';
         </div>
     </div>
 
-    <!-- UTENTI -->
+    <!-- SEZIONE UTENTI -->
     <div id="section_users" style="display:none;">
         <h1>Risultati Utenti</h1>
         <p>Trovati <strong id="results_count_users"><?= count($users) ?></strong> utenti per <strong><?= $search_query ?></strong></p>
@@ -169,6 +172,7 @@ require './src/includes/navbar.php';
     const checkboxes = document.querySelectorAll('#filter_form input[type=checkbox]');
     const searchQuery = '<?= addslashes($search_query) ?>'.toLowerCase();
 
+    // --- Pulsanti per mostrare solo una sezione ---
     btnBooks.addEventListener('click', () => {
         sectionBooks.style.display = 'block';
         sectionUsers.style.display = 'none';
@@ -187,22 +191,31 @@ require './src/includes/navbar.php';
         btnUsers.classList.add('active');
     });
 
+    // Evidenzia il testo corrispondente
     function highlightText(text, search) {
         if (!search) return text;
         const regex = new RegExp(`(${search})`, 'gi');
         return text.replace(regex, '<mark>$1</mark>');
     }
 
+    /*
+    --- Parte OnChange dei filtri ---
+    Questa funzione viene eseguita ogni volta che si cambia una checkbox.
+    Non rifà la ricerca sul server, lavora direttamente sui dati già caricati.
+    Filtra libri, autori e utenti in base ai campi selezionati.
+    */
     function filterResults() {
+        // Filtri attivi per libri
         const activeFiltersBooks = Array.from(checkboxes)
             .filter(cb => cb.checked && cb.closest('#filters_books'))
             .map(cb => cb.name.replace('filtra_', ''));
 
+        // Filtri attivi per utenti
         const activeFiltersUsers = Array.from(checkboxes)
             .filter(cb => cb.checked && cb.closest('#filters_users'))
             .map(cb => cb.name.replace('filtra_', ''));
 
-        // Filtra libri
+        // --- Filtra libri ---
         let visibleBooks = 0;
         document.querySelectorAll('.book_card').forEach(card => {
             const show = activeFiltersBooks.some(field => (card.dataset[field] || '').toLowerCase().includes(searchQuery));
@@ -215,7 +228,7 @@ require './src/includes/navbar.php';
         });
         document.getElementById('results_count_books').textContent = visibleBooks;
 
-        // Filtra autori
+        // --- Filtra autori ---
         let visibleAuthors = 0;
         document.querySelectorAll('.author_card').forEach(card => {
             const show = activeFiltersBooks.some(field => (card.dataset[field] || '').toLowerCase().includes(searchQuery));
@@ -228,7 +241,7 @@ require './src/includes/navbar.php';
         });
         document.getElementById('results_count_authors').textContent = visibleAuthors;
 
-        // Filtra utenti
+        // --- Filtra utenti ---
         let visibleUsers = 0;
         document.querySelectorAll('.user_card').forEach(card => {
             const show = activeFiltersUsers.some(field => (card.dataset[field] || '').toLowerCase().includes(searchQuery));
@@ -242,7 +255,10 @@ require './src/includes/navbar.php';
         document.getElementById('results_count_users').textContent = visibleUsers;
     }
 
+    // Aggiunge l'evento onchange a tutte le checkbox
     checkboxes.forEach(cb => cb.addEventListener('change', filterResults));
+
+    // Applica il filtro iniziale
     filterResults();
 </script>
 
