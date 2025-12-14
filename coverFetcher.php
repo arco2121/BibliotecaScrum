@@ -1,154 +1,124 @@
 <?php
-// Configurazione base
+// Configurazione
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-set_time_limit(0); // Rimuove limiti di tempo
+set_time_limit(0);
 
-// ---------------- CONFIGURAZIONE ---------------- //
 $saveDir = __DIR__ . '/public/bookCover/';
-$batchSize = 35; // Google Books supporta max 40 risultati per pagina. Stiamo sotto per sicurezza.
-// ------------------------------------------------ //
+$concurrentRequests = 10; // Numero di richieste simultanee (non esagerare per evitare ban IP)
 
-// Crea cartella se non esiste
 if (!file_exists($saveDir)) {
-    if (!mkdir($saveDir, 0777, true)) {
-        die("Errore: Impossibile creare la cartella $saveDir.");
-    }
+    mkdir($saveDir, 0777, true);
 }
 
 require_once 'db_config.php';
 
-echo "<h1>Scaricamento Copertine Bulk (Ottimizzato)</h1>";
-echo "<pre>";
+echo "<h1>Scaricamento Parallelo (Multi-Curl)</h1><pre>";
 
 try {
-    // 1. Recupero tutti gli ISBN dal DB
+    // 1. Prendo tutti i libri
     $stmt = $pdo->query("SELECT isbn FROM libri WHERE isbn IS NOT NULL AND isbn != ''");
     $libri = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    echo "Totale libri nel DB: " . count($libri) . "\n";
-
-    // 2. Identifico solo quelli che MANCANO
-    $isbnsDaScaricare = [];
-    $giaPresenti = 0;
-
-    foreach ($libri as $libro) {
-        $isbn = trim($libro['isbn']);
-        $pathPng = $saveDir . $isbn . '.png';
-        $pathJpg = $saveDir . $isbn . '.jpg';
-
-        if (file_exists($pathPng) || file_exists($pathJpg)) {
-            $giaPresenti++;
-        } else {
-            $isbnsDaScaricare[] = $isbn;
+    
+    // 2. Filtro quelli che mancano
+    $daScaricare = [];
+    foreach ($libri as $l) {
+        $isbn = trim($l['isbn']);
+        if (!file_exists($saveDir . $isbn . '.png') && !file_exists($saveDir . $isbn . '.jpg')) {
+            $daScaricare[] = $isbn;
         }
     }
 
-    echo "Già presenti: $giaPresenti\n";
-    echo "Da scaricare: " . count($isbnsDaScaricare) . "\n\n";
+    $totale = count($daScaricare);
+    echo "Libri da scaricare: $totale\n\n";
 
-    if (empty($isbnsDaScaricare)) {
-        echo "Nessun libro da scaricare. Fine.";
-        echo "</pre>";
+    if ($totale === 0) {
+        echo "Tutto aggiornato.";
         exit;
     }
 
-    // 3. Suddivido gli ISBN in pacchetti (Batch)
-    $batches = array_chunk($isbnsDaScaricare, $batchSize);
-    $totalBatches = count($batches);
+    // 3. Processo a blocchi paralleli
+    $batches = array_chunk($daScaricare, $concurrentRequests);
+    
+    foreach ($batches as $batchIndex => $batchIsbns) {
+        $mh = curl_multi_init();
+        $curlHandles = [];
 
-    foreach ($batches as $index => $batchIsbns) {
-        $currentBatchNum = $index + 1;
-        echo "Processing Batch $currentBatchNum di $totalBatches (" . count($batchIsbns) . " ISBN)...\n";
-
-        // 4. Costruisco la query con OR (isbn:AAA OR isbn:BBB ...)
-        $queryParts = [];
+        // Preparo le richieste multiple
         foreach ($batchIsbns as $isbn) {
-            $queryParts[] = "isbn:" . $isbn;
-        }
-        $queryString = implode(' OR ', $queryParts);
-        
-        // URL Encode della query
-        $encodedQuery = urlencode($queryString);
-        
-        // Costruzione URL API (maxResults è fondamentale qui)
-        $apiUrl = "https://www.googleapis.com/books/v1/volumes?q=" . $encodedQuery . "&maxResults=" . count($batchIsbns);
-
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => 'User-Agent: PHPScript/1.0'
-            ]
-        ]);
-
-        $json = @file_get_contents($apiUrl, false, $context);
-        
-        if ($json === FALSE) {
-            echo " - ERRORE nella richiesta API per questo batch.\n";
-            continue;
-        }
-
-        $data = json_decode($json, true);
-
-        if (!isset($data['items'])) {
-            echo " - Nessun risultato trovato per questo gruppo di ISBN.\n";
-            continue; // Passa al prossimo batch
-        }
-
-        // 5. Processo i risultati del batch
-        $scaricatiBatch = 0;
-
-        foreach ($data['items'] as $item) {
-            $volInfo = $item['volumeInfo'];
+            $url = "https://www.googleapis.com/books/v1/volumes?q=isbn:" . $isbn;
             
-            // Cerco l'immagine
-            if (isset($volInfo['imageLinks'])) {
-                $links = $volInfo['imageLinks'];
-                $imageUrl = $links['extraLarge'] ?? $links['large'] ?? $links['medium'] ?? $links['small'] ?? $links['thumbnail'] ?? null;
-
-                if ($imageUrl) {
-                    $imageUrl = str_replace('http://', 'https://', $imageUrl);
-                    
-                    // PROBLEMA: Google restituisce i libri, ma non sappiamo in che ordine.
-                    // Dobbiamo cercare tra gli identifier del risultato quale ISBN corrisponde 
-                    // a uno dei nostri ISBN richiesti nel batch ($batchIsbns).
-                    
-                    $matchedIsbn = null;
-                    if (isset($volInfo['industryIdentifiers'])) {
-                        foreach ($volInfo['industryIdentifiers'] as $identifier) {
-                            if (in_array($identifier['identifier'], $batchIsbns)) {
-                                $matchedIsbn = $identifier['identifier'];
-                                break;
-                            }
-                        }
-                    }
-
-                    // Se abbiamo trovato a quale ISBN corrisponde questa immagine
-                    if ($matchedIsbn) {
-                        $imageContent = @file_get_contents($imageUrl, false, $context);
-                        if ($imageContent) {
-                            file_put_contents($saveDir . $matchedIsbn . '.png', $imageContent);
-                            echo "   -> Salvato: $matchedIsbn\n";
-                            $scaricatiBatch++;
-                            
-                            // Rimuovo l'ISBN dalla lista del batch per evitare doppi salvataggi se Google duplica
-                            $key = array_search($matchedIsbn, $batchIsbns);
-                            if ($key !== false) unset($batchIsbns[$key]);
-                        }
-                    }
-                }
-            }
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            
+            // Aggiungo alla "pila" multi-curl
+            curl_multi_add_handle($mh, $ch);
+            
+            // Salvo il riferimento usando l'ISBN come chiave per ritrovarlo dopo
+            $curlHandles[$isbn] = $ch;
         }
+
+        // Eseguo tutte le richieste simultaneamente
+        $running = null;
+        do {
+            curl_multi_exec($mh, $running);
+            curl_multi_select($mh);
+        } while ($running > 0);
+
+        // Raccolgo i risultati
+        foreach ($curlHandles as $isbn => $ch) {
+            $response = curl_multi_get_content($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            
+            if ($httpCode == 200 && $response) {
+                $data = json_decode($response, true);
+                
+                if (isset($data['items'][0]['volumeInfo']['imageLinks'])) {
+                    $links = $data['items'][0]['volumeInfo']['imageLinks'];
+                    
+                    // Cerco la qualità migliore
+                    $imgUrl = $links['extraLarge'] 
+                           ?? $links['large'] 
+                           ?? $links['medium'] 
+                           ?? $links['small'] 
+                           ?? $links['thumbnail'] 
+                           ?? null;
+
+                    if ($imgUrl) {
+                        $imgUrl = str_replace('http://', 'https://', $imgUrl);
+                        $imgData = @file_get_contents($imgUrl); // Scarico l'immagine effettiva
+                        if ($imgData) {
+                            file_put_contents($saveDir . $isbn . '.png', $imgData);
+                            echo "[OK] $isbn salvato.\n";
+                        }
+                    } else {
+                        echo "[NO IMG] $isbn (Nessun link immagine nel JSON)\n";
+                    }
+                } else {
+                    echo "[NO DATA] $isbn (Libro non trovato o senza copertina)\n";
+                }
+            } else {
+                echo "[ERR API] $isbn (Http Code: $httpCode)\n";
+            }
+
+            // Pulisco la memoria
+            curl_multi_remove_handle($mh, $ch);
+            curl_close($ch);
+        }
+
+        curl_multi_close($mh);
         
-        echo " - Batch completato. Scaricati: $scaricatiBatch\n";
-        
-        // Pausa tra i batch (non tra i singoli libri)
-        sleep(1); 
+        echo "--- Blocco completato ---\n";
+        flush(); // Forza l'output a video
+        sleep(1); // Pausa di sicurezza tra un blocco e l'altro
     }
 
-} catch (PDOException $e) {
-    echo "Errore DB: " . $e->getMessage();
+} catch (Exception $e) {
+    echo "Errore: " . $e->getMessage();
 }
 
-echo "\nOperazione Bulk Completata.</pre>";
+echo "\nFinito.";
 ?>
