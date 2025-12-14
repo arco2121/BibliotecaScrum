@@ -59,6 +59,18 @@ if ($codice) {
 // ---------------- HTML HEADER ----------------
 require './src/includes/header.php';
 require './src/includes/navbar.php';
+
+function getCoverPath(string $isbn): string {
+    $localPath = "public/bookCover/$isbn.png";
+    $publicPath = "public/bookCover/$isbn.png";
+
+    if (file_exists($localPath)) {
+        return $publicPath;
+    }
+
+    return "public/assets/book_placeholder.jpg";
+}
+
 ?>
 
 
@@ -99,7 +111,7 @@ require './src/includes/navbar.php';
             <div class="grid">
                 <?php foreach ($prestiti_attivi as $libro): ?>
                     <a href="./libro?isbn=<?= $libro['isbn'] ?>" class="card cover-only" data-isbn="<?= $libro['isbn'] ?>">
-                        <img src="src/assets/placeholder.jpg" alt="Libro">
+                        <img src="<?= getCoverPath($libro['isbn']) ?>" alt="Libro">
                     </a>
                 <?php endforeach; ?>
             </div>
@@ -111,7 +123,7 @@ require './src/includes/navbar.php';
         <div class="grid">
             <?php foreach ($popolari as $libro): ?>
                 <a href="./libro?isbn=<?= $libro['isbn'] ?>" class="card cover-only" data-isbn="<?= $libro['isbn'] ?>">
-                    <img src="src/assets/placeholder.jpg" alt="Libro">
+                    <img src="<?= getCoverPath($libro['isbn']) ?>" alt="Libro">
                 </a>
             <?php endforeach; ?>
         </div>
@@ -124,7 +136,7 @@ require './src/includes/navbar.php';
                 <?php if ($libriCat): ?>
                     <?php foreach ($libriCat as $libro): ?>
                         <a href="./libro?isbn=<?= $libro['isbn'] ?>" class="card cover-only" data-isbn="<?= $libro['isbn'] ?>">
-                            <img src="src/assets/placeholder.jpg" alt="Libro">
+                            <img src="<?= getCoverPath($libro['isbn']) ?>" alt="Libro">
                         </a>
                     <?php endforeach; ?>
                 <?php else: ?>
@@ -134,39 +146,5 @@ require './src/includes/navbar.php';
         </div>
     <?php endforeach; ?>
 </div>
-
-<script>
-async function fetchCover(isbn) {
-    try {
-        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-        const data = await res.json();
-
-        console.log("Raw API response for ISBN " + isbn, data);
-
-        if (data.items && data.items.length) {
-            for (const item of data.items) {
-                const links = item.volumeInfo?.imageLinks;
-                if (links) {
-                    // Ordine di preferenza: thumbnail > smallThumbnail > small > medium > large > extraLarge
-                    const cover = links.thumbnail || links.smallThumbnail || links.small || links.medium || links.large || links.extraLarge;
-                    if (cover) return cover.replace(/^http:/, 'https:');
-                }
-            }
-        }
-
-        return 'src/assets/placeholder.jpg'; // fallback
-    } catch(e) {
-        console.error('Errore fetch copertina', isbn, e);
-        return 'src/assets/placeholder.jpg';
-    }
-}
-
-// Aggiorna tutte le copertine
-document.querySelectorAll('.card.cover-only').forEach(async card => {
-    const isbn = card.dataset.isbn;
-    const coverUrl = await fetchCover(isbn);
-    card.querySelector('img').src = coverUrl;
-});
-</script>
 
 <?php require './src/includes/footer.php'; ?>
