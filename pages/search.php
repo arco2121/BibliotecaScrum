@@ -3,9 +3,8 @@ require_once 'db_config.php';
 
 function highlight_text(?string $text, string $search): string {
     if ($text === null) return '';
-    if ($search === '') return htmlspecialchars($text);
-    $safe = htmlspecialchars($text);
-    return preg_replace('/' . preg_quote($search, '/') . '/iu', '<mark>$0</mark>', $safe);
+    if ($search === '') return $text;
+    return preg_replace('/' . preg_quote($search, '/') . '/iu', '<mark>$0</mark>', $text);
 }
 
 $search_query = trim($_GET['search'] ?? '');
@@ -32,11 +31,9 @@ if (!empty($search_query)) {
         $all_books = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         foreach ($all_books as $row) {
-            // Libri solo se il titolo contiene il termine di ricerca
             if (stripos($row['titolo'], $search_query) !== false) {
                 $books[$row['isbn']] = $row;
             }
-            // Autori solo se nome o cognome contengono il termine
             if (!empty($row['autore_nome']) && !empty($row['autore_cognome']) &&
                     (stripos($row['autore_nome'], $search_query) !== false || stripos($row['autore_cognome'], $search_query) !== false)) {
                 $authors[$row['isbn']] = $row;
@@ -99,15 +96,15 @@ require './src/includes/navbar.php';
     <!-- LIBRI -->
     <div id="section_books">
         <h1>Risultati Libri</h1>
-        <p>Trovati <strong id="results_count_books"><?= count($books) ?></strong> libri per <strong><?= htmlspecialchars($search_query) ?></strong></p>
+        <p>Trovati <strong id="results_count_books"><?= count($books) ?></strong> libri per <strong><?= $search_query ?></strong></p>
         <div id="results_container_books">
             <?php foreach ($books as $isbn => $book): ?>
                 <div class="book_card"
-                     data-titolo="<?= htmlspecialchars($book['titolo']) ?>"
-                     data-autore_nome="<?= htmlspecialchars($book['autore_nome']) ?>"
-                     data-autore_cognome="<?= htmlspecialchars($book['autore_cognome']) ?>"
+                     data-titolo="<?= $book['titolo'] ?>"
+                     data-autore_nome="<?= $book['autore_nome'] ?>"
+                     data-autore_cognome="<?= $book['autore_cognome'] ?>"
                      style="margin-bottom:10px; display:flex; align-items:center;">
-                    <img src="<?= htmlspecialchars($book['copertina'] ?? 'src/assets/placeholder.jpg') ?>" alt="Copertina" style="width:50px;height:70px;margin-right:10px;">
+                    <img src="<?= $book['copertina'] ?? 'src/assets/placeholder.jpg' ?>" alt="Copertina" style="width:50px;height:70px;margin-right:10px;">
                     <div>
                         <h3 class="book_titolo"><?= highlight_text($book['titolo'], $search_query) ?></h3>
                         <p class="book_autore_nome"><strong>Nome autore:</strong> <?= highlight_text($book['autore_nome'], $search_query) ?></p>
@@ -121,18 +118,18 @@ require './src/includes/navbar.php';
         <hr>
 
         <h2>Risultati Autori</h2>
-        <p>Trovati <strong id="results_count_authors"><?= count($authors) ?></strong> autori per <strong><?= htmlspecialchars($search_query) ?></strong></p>
+        <p>Trovati <strong id="results_count_authors"><?= count($authors) ?></strong> autori per <strong><?= $search_query ?></strong></p>
         <div id="results_container_authors">
             <?php foreach ($authors as $isbn => $book): ?>
                 <div class="author_card"
-                     data-autore_nome="<?= htmlspecialchars($book['autore_nome']) ?>"
-                     data-autore_cognome="<?= htmlspecialchars($book['autore_cognome']) ?>"
+                     data-autore_nome="<?= $book['autore_nome'] ?>"
+                     data-autore_cognome="<?= $book['autore_cognome'] ?>"
                      style="margin-bottom:10px; display:flex; align-items:center;">
-                    <img src="<?= htmlspecialchars($book['copertina'] ?? 'src/assets/placeholder.jpg') ?>" alt="Copertina" style="width:50px;height:70px;margin-right:10px;">
+                    <img src="<?= $book['copertina'] ?? 'src/assets/placeholder.jpg' ?>" alt="Copertina" style="width:50px;height:70px;margin-right:10px;">
                     <div>
                         <p class="author_nome"><strong>Nome autore:</strong> <?= highlight_text($book['autore_nome'], $search_query) ?></p>
                         <p class="author_cognome"><strong>Cognome autore:</strong> <?= highlight_text($book['autore_cognome'], $search_query) ?></p>
-                        <p><strong>Libro:</strong> <?= htmlspecialchars($book['titolo']) ?></p>
+                        <p><strong>Libro:</strong> <?= $book['titolo'] ?></p>
                         <a href="/libro_info?isbn=<?= urlencode($isbn) ?>">Dettagli</a>
                     </div>
                 </div>
@@ -143,13 +140,13 @@ require './src/includes/navbar.php';
     <!-- UTENTI -->
     <div id="section_users" style="display:none;">
         <h1>Risultati Utenti</h1>
-        <p>Trovati <strong id="results_count_users"><?= count($users) ?></strong> utenti per <strong><?= htmlspecialchars($search_query) ?></strong></p>
+        <p>Trovati <strong id="results_count_users"><?= count($users) ?></strong> utenti per <strong><?= $search_query ?></strong></p>
         <div id="results_container_users">
             <?php foreach ($users as $user): ?>
                 <div class="user_card"
-                     data-username="<?= htmlspecialchars($user['username']) ?>"
-                     data-user_nome="<?= htmlspecialchars($user['nome']) ?>"
-                     data-user_cognome="<?= htmlspecialchars($user['cognome']) ?>"
+                     data-username="<?= $user['username'] ?>"
+                     data-user_nome="<?= $user['nome'] ?>"
+                     data-user_cognome="<?= $user['cognome'] ?>"
                      style="margin-bottom:10px;">
                     <p class="user_username"><strong>Username:</strong> <?= highlight_text($user['username'], $search_query) ?></p>
                     <p class="user_user_nome"><strong>Nome:</strong> <?= highlight_text($user['nome'], $search_query) ?></p>
