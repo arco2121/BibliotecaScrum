@@ -100,7 +100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <br>
-        <a href="./signup">Non hai un account? Registrati</a>
+        <a href="./signup">Registrati</a>
+        <br>
+        <a href="./password-reset">Password dimenticata?</a>
     </div>
 
     <?php include './src/includes/footer.php'; ?>

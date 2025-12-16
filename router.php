@@ -16,6 +16,10 @@ $whitelist = [
     '/dashboard-libri' => 'pages/admin/D_libri.php',
     '/dashboard-utenti' => 'pages/admin/D_utenti.php',
     '/search' => 'pages/search.php',
+    '/password-reset'=> 'pages/passwreset.php',
+
+    //temp
+    '/cover-fetcher'=> 'coverFetcher.php',
 ];
 
 
