@@ -1,7 +1,7 @@
 <?php
 
 require_once 'security.php';
-if (!checkAccess('amministratore')) header('Location: ./');;
+if (!checkAccess('amministratore')) header('Location: ./');
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
