@@ -42,11 +42,19 @@ $stm = $pdo->prepare("
 $stm->execute([$codice]);
 $prenotazioni = $stm->fetchAll(PDO::FETCH_ASSOC);
 
-/* ---- Libri letti (placeholder, evita errori) ---- */
-$libri_letti = [];
+/* ---- Libri letti (Da rivedere la query) ---- */
+$stm = $pdo->prepare("
+ SELECT c.isbn as isbn FROM prestiti p JOIN copie c ON p.id_copia = c.id_copia WHERE p.codice_alfanumerico = ? AND p.data_restituzione IS NOT NULL
+");
+$stm->execute([$codice]);
+$libri_letti = $stm->fetchAll(PDO::FETCH_ASSOC);;
 
-/* ---- Badge (Implementerò oggi pomeriggio) ---- */
-$badges = [];
+/* ---- Badge (Da rivedere la query) ---- */
+$stm = $pdo->prepare("
+ SELECT u.id_badge as id_badge, b.icona as icona FROM utente_badge u JOIN badge b ON u.id_badge = b.id_badge WHERE u.id_ub = ?
+");
+$stm->execute([$codice]);
+$badges = $stm->fetchAll(PDO::FETCH_ASSOC);
 
 /* ---- Header / Navbar ---- */
 require './src/includes/header.php';
@@ -82,14 +90,32 @@ function getCoverPath(string $isbn): string {
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     /*Info class style */
+    .info_cover
+    {
+        background-color: #819e71;
+        gap: 15px;
+        padding: 10px 5px;
+        border-radius: 15px;
+        border: solid 5px #3f5135;
+        display: flex;
+        flex-direction: column;
+    }
+    .info_cover input {
+        border-radius: 5px;
+        border: solid 2px #3f5135;
+        padding: 5px;
+    }
     .info_column
     {
         display: flex;
         flex-direction: column;
         width: auto;
+        height: 100%;
         justify-content: flex-start;
         align-items: center;
-        gap: 10px;
+        gap: 15px;
+        padding: 0px 10px;
+        margin: 5px 10px;
     }
     .info_line
     {
@@ -111,9 +137,8 @@ function getCoverPath(string $isbn): string {
     .extend_all
     {
         width: 100%;
-        height: 100%;
-        justify-content: space-between;
-        align-items: flex-start;
+        flex: 1;
+        gap: 20px;
     }
     .section
     {
@@ -127,6 +152,10 @@ function getCoverPath(string $isbn): string {
             padding: 5px;
         }
     }
+    .info_line:first-child
+    {
+        height: 300px;
+    }
 </style>
 
 <?php if ($messaggio_db): ?>
@@ -137,13 +166,14 @@ function getCoverPath(string $isbn): string {
 
     <div class="info_column">
 
-        <img class="info_pfp" alt="Pfp"
-             src="<?= htmlspecialchars($utente['icona'] ?? 'public/assets/base_pfp.png') ?>">
-        <input type="text" disabled value="<?= htmlspecialchars($utente['username'] ?? '') ?>">
-        <input type="text" disabled value="<?= htmlspecialchars($utente['nome'] ?? '') ?>">
-        <input type="text" disabled value="<?= htmlspecialchars($utente['cognome'] ?? '') ?>">
-        <input type="text" disabled value="<?= htmlspecialchars($utente['codice_fiscale'] ?? '') ?>">
-        <input type="text" disabled value="<?= htmlspecialchars($utente['email'] ?? '') ?>">
+        <img class="info_pfp" alt="Pfp" src="<?= htmlspecialchars($utente['icona'] ?? 'public/assets/base_pfp.png') ?>">
+        <div class="info_cover">
+            <input type="text" disabled value="<?= htmlspecialchars($utente['username'] ?? '') ?>">
+            <input type="text" disabled value="<?= htmlspecialchars($utente['nome'] ?? '') ?>">
+            <input type="text" disabled value="<?= htmlspecialchars($utente['cognome'] ?? '') ?>">
+            <input type="text" disabled value="<?= htmlspecialchars($utente['codice_fiscale'] ?? '') ?>">
+            <input type="text" disabled value="<?= htmlspecialchars($utente['email'] ?? '') ?>">
+        </div>
 
     </div>
 
@@ -154,7 +184,9 @@ function getCoverPath(string $isbn): string {
             <div class="grid">
                 <?php if ($badges): ?>
                     <?php foreach ($badges as $badge): ?>
-
+                        <a href="./prestiti?id=<?= $badge['id_badge'] ?>" class="badge cover-only">
+                            <img src="<?= $badge['icona'] ?? 'public/assets/icon-png' ?>" alt="Badge">
+                        </a>
                     <?php endforeach; ?>
                 <?php else: ?>
                     <h4>Nessun badge acquisito</h4>
