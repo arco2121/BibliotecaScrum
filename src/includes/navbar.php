@@ -26,16 +26,16 @@ if (isset($_SESSION['nome_utente'])) {
 
 <nav class="navbar">
     <div class="navbar_left">
-        <a href="./" class="navbar_link_img instrument-sans-semibold" id="navbar_logo">
-            <img src="./public/assets/logo_ligth.png" class="navbar_logo" alt="Biblioteca Scrum">
+        <a href="<?= $path ?>" class="navbar_link_img instrument-sans-semibold" id="navbar_logo">
+            <img src="<?= $path ?>public/assets/logo_ligth.png" class="navbar_logo" alt="Biblioteca Scrum">
         </a>
         <a href="./search" class="navbar_search_mobile_link">
-            <img src="./public/assets/icon_search_ligth.png" alt="Cerca" class="navbar_search_icon_mobile">
+            <img src="<?= $path ?>public/assets/icon_search_ligth.png" alt="Cerca" class="navbar_search_icon_mobile">
         </a>
         <div class="search_container">
             <form class="search_container" action="search" method="GET">
                 <button type="submit" class="search_icon_button">
-                    <img src="./public/assets/icon_search_dark.png" alt="Cerca" class="navbar_search_icon">
+                    <img src="<?= $path ?>public/assets/icon_search_dark.png" alt="Cerca" class="navbar_search_icon">
                 </button>
                 <input type="text" placeholder="Search.." name="search"
                     class="navbar_search_input instrument-sans-semibold"
@@ -54,13 +54,13 @@ if (isset($_SESSION['nome_utente'])) {
 
         <div class="navbar_rigth_left">
             <a href="#" class="navbar_link_img instrument-sans-semibold">
-                <img src="./public/assets/icon_notification.png" alt="notifica" class="navbar_icon">
+                <img src="<?= $path ?>public/assets/icon_notification.png" alt="notifica" class="navbar_icon">
             </a>
 
             <?php
             if (isset($_SESSION['logged']) && $_SESSION['logged'] === true) { ?>
                 <a href="./profilo" class="navbar_link_img instrument-sans-semibold" id="navbar_pfp">
-                    <img src="./public/assets/base_pfp.png" alt="pfp" class="navbar_icon navbar_pfp">
+                    <img src="<?= $path ?>public/assets/base_pfp.png" alt="pfp" class="navbar_icon navbar_pfp">
                 </a>
             <?php } else { ?>
                 <a href="./login" class="navbar_link instrument-sans-semibold text_underline">Accedi</a>

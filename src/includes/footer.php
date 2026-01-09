@@ -16,7 +16,7 @@
                 <span class="footer_separator">-</span>
                 <a href="./terms" class="footer_link">Terms & Conditions</a>
             </div>
-            <img src="./public/assets/logo_ligth.png" alt="Icona Libro" class="footer_icon">
+            <img src="<?= $path ?>public/assets/logo_ligth.png" alt="Icona Libro" class="footer_icon">
         </div>
     </div>
 </footer>
