@@ -29,14 +29,9 @@ if (isset($_SESSION['nome_utente'])) {
         <a href="./" class="navbar_link_img instrument-sans-semibold" id="navbar_logo">
             <img src="./public/assets/logo_ligth.png" class="navbar_logo" alt="Biblioteca Scrum">
         </a>
-        
-        <a href="./search.html" class="navbar_search_mobile_link">
-            <form class="search_container" action="search" method="GET">
-                <button type="submit" class="search_icon_button">
-                    <img src="./public/assets/icon_search_ligth.png" alt="Cerca" class="navbar_search_icon_mobile">
-                </button>
-            </form>
-            
+        <a href="./search" class="navbar_search_mobile_link">
+            <img src="./public/assets/icon_search_ligth.png" alt="Cerca" class="navbar_search_icon_mobile">
+        </a>
         <div class="search_container">
             <form class="search_container" action="search" method="GET">
                 <button type="submit" class="search_icon_button">
