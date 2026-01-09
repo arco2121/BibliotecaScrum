@@ -29,7 +29,7 @@ if (isset($_SESSION['nome_utente'])) {
         <a href="./" class="navbar_link_img instrument-sans-semibold" id="navbar_logo">
             <img src="./public/assets/logo_ligth.png" class="navbar_logo" alt="Biblioteca Scrum">
         </a>
-        <a href="./search_page.html" class="navbar_search_mobile_link">
+        <a href="./search.html" class="navbar_search_mobile_link">
             <img src="./public/assets/icon_search_ligth.png" alt="Cerca" class="navbar_search_icon_mobile">
         </a>
         <div class="search_container">
