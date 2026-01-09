@@ -92,14 +92,14 @@ if (isset($pdo)) {
     $messaggio_db = "Connessione al Database non riuscita (controlla db_config.php).";
     $class_messaggio = "error";
 }
-
-
 ?>
 
-
-<?php  $path = "../";
-require_once './src/includes/header.php'; ?>
-<?php require_once './src/includes/navbar.php'; ?>
+<?php
+$title = "Dashboard Biblioteche";
+    $path = "../";
+    require_once './src/includes/header.php';
+    require_once './src/includes/navbar.php';
+?>
 
 <!-- INIZIO DEL BODY -->
 

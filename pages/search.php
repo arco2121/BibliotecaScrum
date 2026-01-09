@@ -65,9 +65,13 @@ if (!empty($search_query)) {
         $users = [];
     }
 }
+?>
 
-require './src/includes/header.php';
-require './src/includes/navbar.php';
+<?php
+$title = "Ricerca - " . $_GET['search'];
+    $path = "./";
+    require_once './src/includes/header.php';
+    require_once './src/includes/navbar.php';
 ?>
 
 <div class="page_contents">

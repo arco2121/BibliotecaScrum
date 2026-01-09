@@ -27,17 +27,16 @@ if (isset($_SESSION['nome_utente'])) {
 <style>
     /* FIX IMMAGINE PROFILO NAVBAR */
     .navbar_pfp {
-        width: 40px;            /* Dimensione fissa */
-        height: 40px;           /* Dimensione fissa identica alla larghezza */
-        border-radius: 50%;     /* Cerchio perfetto */
-        object-fit: cover;      /* Ritaglia l'immagine senza deformarla */
-        object-position: center;/* Centra il viso/soggetto */
-        aspect-ratio: 1 / 1;    /* Forza il rapporto quadrato */
-        border: 2px solid #3f5135; /* Opzionale: bordo colorato come nel profilo */
-        display: block;         /* Rimuove spaziature inline indesiderate */
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        object-position: center;
+        aspect-ratio: 1 / 1;
+        border: 2px solid #3f5135;
+        display: block;
     }
-    
-    /* Assicura che il contenitore del link non deformi l'immagine */
+
     #navbar_pfp {
         display: flex;
         align-items: center;

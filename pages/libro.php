@@ -321,9 +321,10 @@ function getPfpPath($userId) {
 </style>
 
 <?php
-$page_css = "./public/css/style_index.css"; 
-require './src/includes/header.php';
-require './src/includes/navbar.php';
+$title = $libro['titolo'];
+    $page_css = "./public/css/style_index.css";
+    require './src/includes/header.php';
+    require './src/includes/navbar.php';
 ?>
 
     <div class="page_contents">

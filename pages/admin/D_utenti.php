@@ -126,11 +126,12 @@ try {
 }
 ?>
 
-
-
-<?php $path = "../";
-require_once './src/includes/header.php'; ?>
-<?php require_once './src/includes/navbar.php'; ?>
+<?php
+$title = "Dashboard Utenti";
+    $path = "../";
+    require_once './src/includes/header.php';
+    require_once './src/includes/navbar.php';
+?>
 
 <!-- INIZIO DEL BODY -->
 

@@ -43,9 +43,13 @@ if (isset($pdo)) {
         echo "Errore: " . $e->getMessage();
     }
 }
+?>
 
-require_once './src/includes/header.php';
-require_once './src/includes/navbar.php';
+<?php
+$title = "Gestione Prestiti";
+    $path = "../";
+    require_once './src/includes/header.php';
+    require_once './src/includes/navbar.php';
 ?>
 
     <div class="page_contents">

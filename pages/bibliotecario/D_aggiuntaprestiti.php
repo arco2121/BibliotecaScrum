@@ -24,9 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($pdo)) {
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
                 'utente' => $utente,
-                'copia'  => $copia,
+                'copia' => $copia,
                 'inizio' => $data_prestito,
-                'fine'   => $data_scadenza
+                'fine' => $data_scadenza
         ]);
 
         $pdo->commit();
@@ -54,9 +54,13 @@ if (isset($pdo)) {
         $messaggio = "Errore caricamento dati: " . $e->getMessage();
     }
 }
+?>
 
-require_once './src/includes/header.php';
-require_once './src/includes/navbar.php';
+<?php
+$title = "Aggiunta Prestiti";
+    $path = "../";
+    require_once './src/includes/header.php';
+    require_once './src/includes/navbar.php';
 ?>
 
     <div class="page_contents">
@@ -69,7 +73,8 @@ require_once './src/includes/navbar.php';
         <form method="POST">
             <div>
                 <label>Cerca Utente (Nome, Cognome o Codice):</label><br>
-                <input list="lista_utenti" name="codice_alfanumerico" placeholder="Scrivi per filtrare..." required style="width: 300px;">
+                <input list="lista_utenti" name="codice_alfanumerico" placeholder="Scrivi per filtrare..." required
+                       style="width: 300px;">
                 <datalist id="lista_utenti">
                     <?php foreach ($utenti as $u): ?>
                         <option value="<?= $u['codice_alfanumerico'] ?>">
@@ -83,7 +88,8 @@ require_once './src/includes/navbar.php';
 
             <div>
                 <label>Cerca Libro (Titolo o ID Copia):</label><br>
-                <input list="lista_libri" name="id_copia" placeholder="Scrivi il titolo del libro..." required style="width: 300px;">
+                <input list="lista_libri" name="id_copia" placeholder="Scrivi il titolo del libro..." required
+                       style="width: 300px;">
                 <datalist id="lista_libri">
                     <?php foreach ($libri_disponibili as $l): ?>
                         <option value="<?= $l['id_copia'] ?>">
