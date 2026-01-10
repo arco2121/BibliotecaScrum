@@ -21,49 +21,33 @@ $messaggio_db = "";
 
     <div class="page_contents">
         <div class="dashboard_cards_con instrument-sans-semibold text_color_dark">
-            <div class="dashboard_card dashboard_card_1">
+            
+            <a href="admin/dashboard-biblioteche" class="dashboard_card dashboard_card_1">
                 <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
-                <h1>
-                <a class="young-serif-" href="admin/dashboard-biblioteche">
-                    Dashboard biblioteche
-                </a>
-                </h1>
-            </div>
-            <div class="dashboard_card dashboard_card_2">
+                <h1>Dashboard biblioteche</h1>
+            </a>
+
+            <a href="admin/dashboard-libri" class="dashboard_card dashboard_card_2">
                 <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
-                <h1>
-                <a href="admin/dashboard-libri">
-                    Dashboard libri
-                </a>
-                </h1>
-            </div>
-            <div class="dashboard_card dashboard_card_3">
+                <h1>Dashboard libri</h1>
+            </a>
+
+            <a href="admin/dashboard-utenti" class="dashboard_card dashboard_card_3">
                 <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
-                <h1>
-                <a href="admin/dashboard-utenti">
-                    Dashboard utenti
-                </a>
-                </h1>
-            </div>
-            <div class="dashboard_card dashboard_card_4">
+                <h1>Dashboard utenti</h1>
+            </a>
+
+            <a href="bibliotecario/dashboard-gestioneprestiti" class="dashboard_card dashboard_card_4">
                 <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
-                <h1>
-                <a href="bibliotecario/dashboard-gestioneprestiti">
-                    Gestione Prestiti
-                </a>
-                </h1>
-            </div>
-            <div class="dashboard_card dashboard_card_5">
+                <h1>Gestione Prestiti</h1>
+            </a>
+
+            <a href="bibliotecario/dashboard-aggiuntaprestiti" class="dashboard_card dashboard_card_5">
                 <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
-                <h1>
-                <a href="bibliotecario/dashboard-aggiuntaprestiti">
-                    Aggiunta Prestiti
-                </a>
-                </h1>
-            </div>
+                <h1>Aggiunta Prestiti</h1>
+            </a>
+            
         </div>
-
-
     </div>
 
 <?php } elseif (checkAccess('bibliotecario')) { ?>
