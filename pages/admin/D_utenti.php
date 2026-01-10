@@ -8,6 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once 'db_config.php';
+require_once './src/includes/codiceFiscaleMethods.php';
 
 $messaggio_db = "";
 $class_messaggio = "";
@@ -49,37 +50,56 @@ try {
         $account_bloccato = isset($_POST['account_bloccato']) ? 1 : 0;
         $affidabile = isset($_POST['affidabile']) ? 1 : 0;
 
+        $ruolo0 = isset($_POST['ruolo0']) ? 1 : 0;
+        $ruolo1 = isset($_POST['ruolo1']) ? 1 : 0;
+        $ruolo2 = isset($_POST['ruolo2']) ? 1 : 0;
+        $ruolo3 = isset($_POST['ruolo3']) ? 1 : 0;
+
         $stmt = $pdo->prepare("
             UPDATE utenti SET
                 nome = :nome,
                 cognome = :cognome,
-                data_nascita = :data_nascita,
-                sesso = :sesso,
-                comune_nascita = :comune_nascita,
                 codice_fiscale = :codice_fiscale,
                 email = :email,
                 password_hash = :password_hash,
-                tentativi_login = :tentativi_login,
+                login_bloccato = :login_bloccato,
                 account_bloccato = :account_bloccato,
                 data_creazione = :data_creazione,
-                affidabile = :affidabile
+                affidabile = :affidabile,
+                livello_privato = :livello_privato,
+                email_confermata = :email_confermata,
             WHERE codice_alfanumerico = :codice
         ");
 
         $stmt->execute([
                 'nome' => $_POST['nome'],
                 'cognome' => $_POST['cognome'],
-                'data_nascita' => $_POST['data_nascita'],
-                'sesso' => $_POST['sesso'],
-                'comune_nascita' => $_POST['comune_nascita'],
                 'codice_fiscale' => $_POST['codice_fiscale'],
                 'email' => $_POST['email'],
                 'password_hash' => $password,
-                'tentativi_login' => $_POST['tentativi_login'],
+                'login_bloccato' => $_POST['login_bloccato'],
                 'account_bloccato' => $account_bloccato,
                 'data_creazione' => $_POST['data_creazione'],
                 'affidabile' => $affidabile,
+                'livello_privato' => $_POST['livello_privato'],
+                'email_confermata' => $_POST['email_confermata'],
                 'codice' => $_POST['codice_alfanumerico']
+        ]);
+
+        $stmt = $pdo->prepare("
+            UPDATE ruoli SET
+                studente = :studente,
+                docente = :docente,
+                bibliotecario = :bibliotecario,
+                amministratore = :amministratore
+            WHERE codice_alfanumerico = :codice
+        ");
+        $stmt->execute([
+            "studente" => $ruolo0,
+            "docente" => $ruolo1,
+            "bibliotecario" => $ruolo2,
+            "amministratore" => $ruolo3,
+            "codice" => $_POST['codice_alfanumerico']
         ]);
 
         header("Location: dashboard-utenti");
@@ -90,9 +110,8 @@ try {
     if (isset($_POST['inserisci'])) {
         $stmt = $pdo->prepare("
             INSERT INTO utenti (
-                codice_alfanumerico, nome, cognome, data_nascita,
-                sesso, comune_nascita, codice_fiscale, email,
-                password_hash, tentativi_login, account_bloccato,
+                codice_alfanumerico, nome, cognome, codice_fiscale,email,
+                password_hash, login_bloccato, account_bloccato,
                 data_creazione, affidabile
             ) VALUES (
                 :codice, :nome, :cognome, :data_nascita,
@@ -114,11 +133,34 @@ try {
                 'password' => password_hash($_POST['password_hash'], PASSWORD_DEFAULT)
         ]);
 
+        $ruolo0 = isset($_POST['ruolo0']) ? 1 : 0;
+        $ruolo1 = isset($_POST['ruolo1']) ? 1 : 0;
+        $ruolo2 = isset($_POST['ruolo2']) ? 1 : 0;
+        $ruolo3 = isset($_POST['ruolo3']) ? 1 : 0;
+
+        $stmt = $pdo->prepare("
+                                INSERT INTO ruoli(
+                                codice_alfanumerico,studente,docente,
+                                bibliotecario,amministratore)
+                                values(
+                                :codice_alfanumerico,:studente,:docente,
+                                :bibliotecario,:amministratore                             
+                                )
+                                ");
+        $stmt->execute(['codice_alfanumerico' => $_POST['codice_alfanumerico'],
+                'studente' => $ruolo0,
+                'docente' => $ruolo1,
+                'bibliotecario' => $ruolo2,
+                'amministratore' => $ruolo3
+        ]);
+
         header("Location: dashboard-utenti");
         exit;
     }
 
-    $stmt = $pdo->query("SELECT * FROM utenti ORDER BY data_creazione DESC");
+    $stmt = $pdo->query("SELECT * FROM utenti 
+                                JOIN ruoli ON utenti.codice_alfanumerico = ruoli.codice_alfanumerico
+                                ORDER BY data_creazione DESC");
     $utenti = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
@@ -151,6 +193,7 @@ $title = "Dashboard Utenti";
                 <th>Codice Fiscale</th>
                 <th>Email</th>
                 <th>Password</th>
+                <th>Ruolo</th>
                 <th>Azioni</th>
             </tr>
 
@@ -172,7 +215,16 @@ $title = "Dashboard Utenti";
                     <td><input type="text" name="codice_fiscale" maxlength="16" required></td>
                     <td><input type="email" name="email" required></td>
                     <td><input type="password" name="password_hash" required></td>
-
+                    <td>
+                        <input type="checkbox" name="ruolo0" value="1">
+                        <label for="ruolo0">Studente </label><br>
+                        <input type="checkbox" name="ruolo1" value="1">
+                        <label for="ruolo1">Docente </label><br>
+                        <input type="checkbox" name="ruolo2" value="1">
+                        <label for="ruolo2">Bibliotecario</label><br>
+                        <input type="checkbox" name="ruolo3" value="1">
+                        <label for="ruolo3">Amministratore </label><br>
+                    </td>
                     <td>
                         <input type="hidden" name="inserisci" value="1">
                         <button type="submit">Inserisci</button>
@@ -197,6 +249,7 @@ $title = "Dashboard Utenti";
             <th>Account Bloccato</th>
             <th>Data Creazione</th>
             <th>Affidabile</th>
+            <th>Ruolo</th>
             <th>Azioni</th>
         </tr>
 
@@ -253,8 +306,8 @@ $title = "Dashboard Utenti";
                     </td>
 
                     <td>
-                        <input type="number" name="tentativi_login"
-                               value="<?= htmlspecialchars($u['tentativi_login']) ?>"
+                        <input type="number" name="login_bloccato"
+                               value="<?= htmlspecialchars($u['login_bloccato']) ?>"
                                min="0">
                     </td>
 
@@ -272,6 +325,17 @@ $title = "Dashboard Utenti";
                     <td>
                         <input type="checkbox" name="affidabile"
                                value="1" <?= $u['affidabile'] ? 'checked' : '' ?>>
+                    </td>
+
+                    <td>
+                        <input type="checkbox" name="ruolo0" value="1" <?= $u['studente'] ? 'checked' : '' ?>>
+                        <label for="ruolo0">Studente </label><br>
+                        <input type="checkbox" name="ruolo1" value="1" <?= $u['docente'] ? 'checked' : '' ?>>
+                        <label for="ruolo1">Docente </label><br>
+                        <input type="checkbox" name="ruolo2" value="1" <?= $u['bibliotecario'] ? 'checked' : '' ?>>
+                        <label for="ruolo2">Bibliotecario</label><br>
+                        <input type="checkbox" name="ruolo3" value="1" <?= $u['amministratore'] ? 'checked' : '' ?>>
+                        <label for="ruolo3">Admin </label><br>
                     </td>
 
                     <td>
