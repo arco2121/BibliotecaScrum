@@ -7,21 +7,26 @@
     justify-items: stretch;
 }
 
-.dashboard_card a {
-    text-decoration: none;
-    color: var(--color_accent_dark);
-}
-
 .dashboard_card {
     background-color: #eae3d2;
     padding: 60px 20px;
     border-radius: 20px;
-    display: flex;
+    display: flex; /* Funziona benissimo anche sui tag <a> */
     flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 30px;
     font-size: 2rem;
+    
+    /* Aggiunte queste proprietà per gestire il link */
+    text-decoration: none; 
+    color: var(--color_accent_dark); /* Applica il colore a tutto il testo dentro */
+    transition: transform 0.2s ease; /* Un tocco cute per l'hover */
+    cursor: pointer;
+}
+
+.dashboard_card:hover {
+    transform: translateY(-5px);
 }
 
 .dashboard_card img {
