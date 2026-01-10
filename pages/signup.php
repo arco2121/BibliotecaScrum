@@ -195,7 +195,9 @@ $page_css = "./public/css/style_forms.css";
 
 </div>
 
-<?php include './src/includes/footer.php'; ?>
+</div>
+</body>
+</html>
 
 <script>
 function redirectConCodice(conCodice) {
