@@ -46,6 +46,11 @@ $messaggio_db = "";
                 <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
                 <h1>Aggiunta Prestiti</h1>
             </a>
+
+            <a href="bibliotecario/dashboard-report" class="dashboard_card dashboard_card_4">
+                <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
+                <h1>Statistiche</h1>
+            </a>
             
         </div>
     </div>
@@ -59,6 +64,9 @@ $messaggio_db = "";
             </div>
             <div>
                 <a href="bibliotecario/dashboard-aggiuntaprestiti">Aggiunta Prestiti</a>
+            </div>
+            <div>
+                <a href="bibliotecario/dashboard-report">Statistiche</a>
             </div>
 
         </div>

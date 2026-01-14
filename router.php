@@ -28,6 +28,7 @@ $whitelist = [
     //bibliotecario
     '/bibliotecario/dashboard-gestioneprestiti' => 'pages/bibliotecario/D_gestioneprestiti.php',
     '/bibliotecario/dashboard-aggiuntaprestiti' => 'pages/bibliotecario/D_aggiuntaprestiti.php',
+    '/bibliotecario/dashboard-report' => 'pages/bibliotecario/D_report.php',
 
     //temp
     '/cover-fetcher'=> 'coverFetcher.php',
