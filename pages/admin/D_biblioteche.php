@@ -8,12 +8,13 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Verifica accesso amministratore
 if (!checkAccess('amministratore')) {
-    header('Location: ./');
+    header('Location: /');
     exit;
 }
 
 $messaggio_db = "";
 $class_messaggio = "";
+$biblioteche = [];
 
 // Verifica connessione database
 if (!isset($pdo)) {
@@ -26,25 +27,26 @@ try {
     if (isset($_POST['delete_id'])) {
         $stmt = $pdo->prepare("DELETE FROM biblioteche WHERE id = :id");
         $stmt->execute(['id' => $_POST['delete_id']]);
-        header("Location: dashboard-biblioteche.php");
+        header("Location: "."dashboard-biblioteche");
         exit;
     }
 
     // MODIFICA
-    if (isset($_POST['edit_id'])) {
+    if (isset($_POST['edit_id']) && !isset($_POST['delete_id'])) {
         $stmt = $pdo->prepare("
             UPDATE biblioteche 
-            SET nome = :nome, indirizzo = :indirizzo, lat = :lat, lon = :lon
+            SET nome = :nome, indirizzo = :indirizzo, lat = :lat, lon = :lon, orari = :orari
             WHERE id = :id
         ");
         $stmt->execute([
-                'nome' => $_POST['nome'],
-                'indirizzo' => $_POST['indirizzo'],
-                'lat' => $_POST['lat'],
-                'lon' => $_POST['lon'],
+                'nome' => trim($_POST['nome']),
+                'indirizzo' => trim($_POST['indirizzo']),
+                'lat' => trim($_POST['lat']),
+                'lon' => trim($_POST['lon']),
+                'orari' => !empty(trim($_POST['orari'])) ? trim($_POST['orari']) : null,
                 'id' => $_POST['edit_id']
         ]);
-        header("Location: dashboard-biblioteche.php");
+        header("Location: "."dashboard-biblioteche");
         exit;
     }
 
@@ -55,13 +57,13 @@ try {
             VALUES (:nome, :indirizzo, :lat, :lon, :orari)
         ");
         $stmt->execute([
-                'nome' => $_POST['nome'],
-                'indirizzo' => $_POST['indirizzo'],
-                'lat' => $_POST['lat'],
-                'lon' => $_POST['lon'],
-                'orari' => $_POST['orari'] ?? ''
+                'nome' => trim($_POST['nome']),
+                'indirizzo' => trim($_POST['indirizzo']),
+                'lat' => trim($_POST['lat']),
+                'lon' => trim($_POST['lon']),
+                'orari' => !empty(trim($_POST['orari'])) ? trim($_POST['orari']) : null
         ]);
-        header("Location: dashboard-biblioteche.php");
+        header("Location: "."dashboard-biblioteche");
         exit;
     }
 
@@ -71,106 +73,117 @@ try {
     $biblioteche = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $e) {
-    $messaggio_db = "Errore: " . $e->getMessage();
+    $messaggio_db = "Errore database: " . $e->getMessage();
     $class_messaggio = "error";
 }
-?>
 
-<?php
+// Impostazioni per header e navbar
 $title = "Dashboard Biblioteche";
 $path = "../";
 require_once './src/includes/header.php';
 require_once './src/includes/navbar.php';
 ?>
 
-<div class="page_contents">
-    <?php if ($messaggio_db): ?>
-        <div class="message <?= $class_messaggio ?>">
-            <?= htmlspecialchars($messaggio_db) ?>
-        </div>
-    <?php endif; ?>
+    <!-- INIZIO DEL BODY -->
+    <div class="page_contents">
 
-    <h2>Gestione Biblioteche</h2>
+        <?php if ($messaggio_db): ?>
+            <div class="message <?= $class_messaggio ?>">
+                <?= htmlspecialchars($messaggio_db) ?>
+            </div>
+        <?php endif; ?>
 
-    <!-- Form inserimento nuova biblioteca -->
-    <h3>Inserisci nuova biblioteca</h3>
-    <table style="margin-bottom: 40px">
-        <tr>
-            <th>Nome</th>
-            <th>Indirizzo</th>
-            <th>Latitudine</th>
-            <th>Longitudine</th>
-            <th>Orari</th>
-            <th>Azioni</th>
-        </tr>
-        <tr>
-            <form method="post">
-                <td><input type="text" placeholder="Nome biblioteca" name="nome" required></td>
-                <td><input type="text" placeholder="Via, Città" name="indirizzo" required></td>
-                <td><input type="number" step="any" placeholder="45.123" name="lat" required></td>
-                <td><input type="number" step="any" placeholder="9.123" name="lon" required></td>
-                <td><input type="text" placeholder="Lun-Ven 9-18" name="orari"></td>
-                <input type="hidden" name="inserisci" value="1">
-                <td><button type="submit">Inserisci</button></td>
-            </form>
-        </tr>
-    </table>
+        <h2>Gestione Biblioteche</h2>
 
-    <!-- Elenco biblioteche esistenti -->
-    <h3>Biblioteche esistenti</h3>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Indirizzo</th>
-            <th>Latitudine</th>
-            <th>Longitudine</th>
-            <th>Azioni</th>
-        </tr>
-
-        <?php if (empty($biblioteche)): ?>
-            <tr>
-                <td colspan="6" style="text-align: center;">Nessuna biblioteca presente</td>
-            </tr>
-        <?php else: ?>
-            <?php foreach ($biblioteche as $b): ?>
+        <!-- Form inserimento nuova biblioteca -->
+        <h3>Inserisci nuova biblioteca</h3>
+        <form method="post">
+            <table>
                 <tr>
-                    <form method="POST">
-                        <td><?= htmlspecialchars($b['id']) ?></td>
-                        <td>
-                            <input type="text" name="nome"
-                                   value="<?= htmlspecialchars($b['nome']) ?>" required>
-                        </td>
-                        <td>
-                            <input type="text" name="indirizzo"
-                                   value="<?= htmlspecialchars($b['indirizzo']) ?>" required>
-                        </td>
-                        <td>
-                            <input type="number" step="any" name="lat"
-                                   value="<?= htmlspecialchars($b['lat']) ?>" required>
-                        </td>
-                        <td>
-                            <input type="number" step="any" name="lon"
-                                   value="<?= htmlspecialchars($b['lon']) ?>" required>
-                        </td>
-                        <td>
-                            <input type="hidden" name="edit_id" value="<?= $b['id'] ?>">
-                            <button type="submit">Salva</button>
-                    </form>
-
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="delete_id" value="<?= $b['id'] ?>">
-                        <button type="submit"
-                                onclick="return confirm('Eliminare <?= htmlspecialchars($b['nome']) ?>?')">
-                            Elimina
-                        </button>
-                    </form>
+                    <th>Nome</th>
+                    <th>Indirizzo</th>
+                    <th>Latitudine</th>
+                    <th>Longitudine</th>
+                    <th>Orari</th>
+                    <th>Azioni</th>
+                </tr>
+                <tr>
+                    <td>
+                        <input type="text" name="nome" required>
+                    </td>
+                    <td>
+                        <input type="text"  name="indirizzo" required>
+                    </td>
+                    <td>
+                        <input type="number"  name="lat" required>
+                    </td>
+                    <td>
+                        <input type="number" name="lon" required>
+                    </td>
+                    <td>
+                        <input type="text"   name="orari">
+                    </td>
+                    <td>
+                        <input type="hidden" name="inserisci" value="1">
+                        <button type="submit">Inserisci</button>
                     </td>
                 </tr>
-            <?php endforeach; ?>
+            </table>
+        </form>
+
+        <!-- Elenco biblioteche esistenti -->
+        <h3>Biblioteche esistenti</h3>
+
+        <?php if (empty($biblioteche)): ?>
+            <p>Nessuna biblioteca presente nel database.</p>
+        <?php else: ?>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Indirizzo</th>
+                    <th>Latitudine</th>
+                    <th>Longitudine</th>
+                    <th>Orari</th>
+                    <th>Azioni</th>
+                </tr>
+                <?php foreach ($biblioteche as $b): ?>
+                    <tr>
+                        <form method="POST">
+                            <td><?= htmlspecialchars($b['id']) ?></td>
+                            <td>
+                                <input type="text" name="nome" value="<?= htmlspecialchars($b['nome']) ?>" required>
+                            </td>
+                            <td>
+                                <input type="text" name="indirizzo" value="<?= htmlspecialchars($b['indirizzo']) ?>" required>
+                            </td>
+                            <td>
+                                <input type="number" name="lat" value="<?= htmlspecialchars($b['lat']) ?>" required>
+                            </td>
+                            <td>
+                                <input type="number" name="lon" value="<?= htmlspecialchars($b['lon']) ?>" required>
+                            </td>
+                            <td>
+                                <input type="text" name="orari" value="<?= htmlspecialchars($b['orari'] ?? '') ?>"  >
+                            </td>
+                            <td>
+                                <input type="hidden" name="edit_id" value="<?= $b['id'] ?>">
+                                <button type="submit">Salva</button>
+                        </form>
+
+                        <form method="POST" style="display:inline;">
+                            <input type="hidden" name="delete_id" value="<?= $b['id'] ?>">
+                            <button type="submit" onclick="return confirm('Eliminare <?= htmlspecialchars($b['nome']) ?>?')">
+                                Elimina
+                            </button>
+                        </form>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </table>
         <?php endif; ?>
-    </table>
-</div>
+
+    </div>
 
 <?php require_once './src/includes/footer.php'; ?>
 
@@ -179,25 +192,4 @@ require_once './src/includes/navbar.php';
         padding: 15px;
         border: solid 1px black;
     }
-    table {
-        border-collapse: collapse;
-        width: 100%;
-    }
-    .message {
-        padding: 10px;
-        margin: 10px 0;
-        border-radius: 5px;
-    }
-    .success {
-        background-color: #d4edda;
-        color: #155724;
-    }
-    .error {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-    input[type="text"], input[type="number"] {
-        width: 90%;
-        padding: 5px;
-    }
-</style>
+</style>3
