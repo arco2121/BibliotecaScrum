@@ -47,7 +47,7 @@ $messaggio_db = "";
                 <h1>Aggiunta Prestiti</h1>
             </a>
 
-            <a href="bibliotecario/dashboard-report" class="dashboard_card dashboard_card_4">
+            <a href="admin/dashboard-report" class="dashboard_card dashboard_card_4">
                 <img src="<?= $path ?>/public/assets/icon.png" alt="Icon">
                 <h1>Statistiche</h1>
             </a>
@@ -65,10 +65,6 @@ $messaggio_db = "";
             <div>
                 <a href="bibliotecario/dashboard-aggiuntaprestiti">Aggiunta Prestiti</a>
             </div>
-            <div>
-                <a href="bibliotecario/dashboard-report">Statistiche</a>
-            </div>
-
         </div>
     </div>
 <?php }else{header('Location: ./'); } ?>
