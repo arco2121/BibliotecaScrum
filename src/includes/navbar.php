@@ -22,6 +22,12 @@ $nome_visualizzato = 'Utente';  // username da database
 if (isset($_SESSION['nome_utente'])) {
     $nome_visualizzato = $_SESSION['nome_utente'];
 }
+if(isset($_POST["logout"])){
+    session_unset();
+    session_destroy();
+    header("Location: login");
+    exit;
+}
 ?>
 
 <style>
@@ -65,7 +71,12 @@ if (isset($_SESSION['nome_utente'])) {
         </div>
     </div>
     <div class="navbar_rigth">
-
+        <?php if (isset($_SESSION['logged']) && $_SESSION['logged'] === true) { ?>
+        <form action="" method="post">
+            <input type="hidden" name="logout" value="1">
+            <input type="submit" value="logout">
+        </form>
+        <?php }?>
         <?php if (checkAccess('amministratore') || checkAccess('bibliotecario')) { ?>
             <div class="navbar_rigth_rigth">
                 <a href="<?= $path ?>dashboard" class="navbar_link instrument-sans-semibold">Dashboard <?php echo checkAccess('amministratore') ? 'Amministratore' : 'Bibliotecario'?></a>
@@ -79,7 +90,7 @@ if (isset($_SESSION['nome_utente'])) {
             </a>
 
             <?php
-            if (isset($_SESSION['logged']) && $_SESSION['logged'] === true) { 
+            if (isset($_SESSION['logged']) && $_SESSION['logged'] === true) {
                 $pfpPath = $path . 'public/pfp/' . $_SESSION['codice_utente'] . '.png';
                 if (!file_exists($pfpPath)) {
                     $pfpPath = $path . 'public/assets/base_pfp.png';
