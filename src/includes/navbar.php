@@ -75,7 +75,7 @@ if(isset($_POST["logout"])){
                 Logout
             </a>
 
-            <form id="logout-form" action="" method="post" style="display: none;">
+            <form id="logout-form" action="<?= $path ?>logout" method="post" style="display: none;">
                 <input type="hidden" name="logout" value="1">
             </form>
         <?php }?>
