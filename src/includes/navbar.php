@@ -123,9 +123,6 @@ if(isset($_POST["logout"])){
         <a href="<?= $path ?>" class="navbar_link_img instrument-sans-semibold" id="navbar_logo">
             <img src="<?= $path ?>public/assets/logo_ligth.png" class="navbar_logo" alt="Biblioteca Scrum">
         </a>
-        <a href="./search" class="navbar_search_mobile_link">
-            <img src="<?= $path ?>public/assets/icon_search_ligth.png" alt="Cerca" class="navbar_search_icon_mobile">
-        </a>
         <div class="search_container">
             <form class="search_container" action="search" method="GET">
                 <button type="submit" class="search_icon_button">
