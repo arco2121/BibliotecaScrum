@@ -65,7 +65,7 @@ if (!empty($search_query)) {
     } catch (PDOException $e) {
         $users = [];
     }
-}
+} ?>
 
 <?php
 // ---------------- HTML HEADER ----------------
