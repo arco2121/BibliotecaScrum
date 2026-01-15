@@ -87,8 +87,8 @@ require_once './src/includes/navbar.php';
 
             <!-- Pulsanti per selezionare la sezione da visualizzare -->
             <div class="search_buttons_container">
-                <button type="button" id="btn_books" class="section_btn active general_button_dark">Libri</button>
-                <button type="button" id="btn_users" class="section_btn general_button_dark">Utenti</button>
+                <button type="button" id="btn_books" class="general_button_dark section_btn active">Libri</button>
+                <button type="button" id="btn_users" class="general_button_dark section_btn">Utenti</button>
             </div>
         </div>
 

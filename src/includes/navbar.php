@@ -69,10 +69,15 @@ if(isset($_POST["logout"])){
     </div>
     <div class="navbar_rigth">
         <?php if (isset($_SESSION['logged']) && $_SESSION['logged'] === true) { ?>
-        <form action="" method="post">
-            <input type="hidden" name="logout" value="1">
-            <input type="submit" value="logout">
-        </form>
+            <a href="#"
+               onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+               class="navbar_link instrument-sans-semibold">
+                Logout
+            </a>
+
+            <form id="logout-form" action="" method="post" style="display: none;">
+                <input type="hidden" name="logout" value="1">
+            </form>
         <?php }?>
         <?php if (checkAccess('amministratore') || checkAccess('bibliotecario')) { ?>
             <div class="navbar_rigth_rigth">
