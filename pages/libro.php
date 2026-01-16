@@ -427,22 +427,25 @@ $title = $libro['titolo'] ?? 'Libro';
                 </div>
             </div>
             <!-- Dopo la mappa e prima delle recensioni -->
-            <div class="related_books_section">
-                <h2 class="related_books_title">Chi ha letto questo ha letto anche...</h2>
-                <?php if($consigliati): ?>
-                    <div class="related_books_list">
-                        <?php foreach($consigliati as $r): ?>
-                            <div class="related_book_card" onclick="window.location='./libro?isbn=<?= $r['isbn'] ?>'">
-                                <img src="<?= getCoverPath($r['isbn']) ?>" alt="<?= htmlspecialchars($r['titolo']) ?>" class="related_book_cover">
-                                <div class="related_book_title"><?= htmlspecialchars($r['titolo']) ?></div>
-                                <div class="related_book_percent"><?= $r['percent'] ?>% degli utenti ha letto anche questo</div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <p style="text-align:center; color:#888;">Nessun suggerimento disponibile per questo libro.</p>
-                <?php endif; ?>
-            </div>
+            <?php if($uid): // mostra consigliati solo se loggato ?>
+                <div class="related_books_section">
+                    <h2 class="related_books_title">Chi ha letto questo ha letto anche...</h2>
+                    <?php if($consigliati): ?>
+                        <div class="related_books_list">
+                            <?php foreach($consigliati as $r): ?>
+                                <div class="related_book_card" onclick="window.location='./libro?isbn=<?= $r['isbn'] ?>'">
+                                    <img src="<?= getCoverPath($r['isbn']) ?>" alt="<?= htmlspecialchars($r['titolo']) ?>" class="related_book_cover">
+                                    <div class="related_book_title"><?= htmlspecialchars($r['titolo']) ?></div>
+                                    <div class="related_book_percent"><?= $r['percent'] ?>% degli utenti ha letto anche questo</div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <p style="text-align:center; color:#888;">Nessun suggerimento disponibile per questo libro.</p>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
 
 
             <div class="reviews_section">
