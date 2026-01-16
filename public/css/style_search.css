@@ -227,3 +227,7 @@ input[type="checkbox"] {
         grid-template-columns: 1fr;
     }
 }
+
+markGreen {
+    background-color: var(--color_accent_ligth);
+}

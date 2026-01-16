@@ -9,7 +9,7 @@ function highlight_text(?string $text, string $search): string
 {
     if ($text === null) return '';
     if ($search === '') return $text;
-    return preg_replace('/' . preg_quote($search, '/') . '/iu', '<mark>$0</mark>', $text);
+    return preg_replace('/' . preg_quote($search, '/') . '/iu', '<markGreen>$0</markGreen>', $text);
 }
 
 $search_query = trim($_GET['search'] ?? '');
