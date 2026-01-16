@@ -78,7 +78,7 @@ if(isset($_POST["logout"])){
                 <button type="submit" class="search_icon_button">
                     <img src="<?= $path ?>public/assets/icon_search_dark.png" alt="Cerca" class="navbar_search_icon">
                 </button>
-                <input type="text" placeholder="Cerca libro, autore o utente (CF)..." name="search"
+                <input type="text" placeholder="Cerca..." name="search"
                     class="navbar_search_input instrument-sans-semibold"
                     value="<?= isset($_GET['search']) ? $_GET['search'] : '' ?>">
             </form>
