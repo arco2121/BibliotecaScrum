@@ -330,11 +330,12 @@ if (isset($uid) && $uid) {
 function badgeIconHtmlProfile(array $badge) {
     $icon = $badge['icona'] ?? '';
     // Primo tentativo: file in public/badges/
-    $localPath = __DIR__ . "/../public/badges/" . $icon;
-    $webPath = "./public/badges/" . $icon;
-    if ($icon && file_exists($localPath)) {
+    $localPath = "../public/assets/badge/" . $icon. '.png';
+    $webPath = "./public/assets/badge/" . $icon . '.png';
+    if ($icon && file_exists($webPath)) {
         return '<img src="' . htmlspecialchars($webPath) . '" alt="' . htmlspecialchars($badge['nome']) . '" style="width:72px;height:72px;object-fit:contain;border-radius:8px;">';
     }
+    var_dump($localPath);
     // Non uso SVG inline qui per sicurezza — fallback lettera
     $letter = strtoupper(substr($badge['nome'] ?? 'B', 0, 1));
     return '<div style="width:72px;height:72px;border-radius:10px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;color:#666;">' .
