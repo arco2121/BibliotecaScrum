@@ -96,8 +96,8 @@ if (!$messaggio_db) {
 
 function badgeIconHtml($badge) {
     $icon = $badge['icona'] ?? null;
-    $path = __DIR__ . "/../public/badges/" . $icon;
-    $webPath = "./public/badges/" . $icon;
+    $path = __DIR__ . "/../public/badge/";
+    $webPath = "./public/badge/";
     if ($icon) {
         // uso la classe già presente per le cover dei libri così erediti gli stili esistenti
         return '<img src="' . htmlspecialchars($webPath) . '" alt="' . htmlspecialchars($badge['nome']) . '" class="book_hero_cover">';

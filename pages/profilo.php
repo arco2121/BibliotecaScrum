@@ -330,8 +330,8 @@ if (isset($uid) && $uid) {
 function badgeIconHtmlProfile(array $badge) {
     $icon = $badge['icona'] ?? null;
     // Primo tentativo: file in public/badges/
-    $localPath = "../public/assets/badge/" . $icon. '.png';
-    $webPath = "./public/assets/badge/" . $icon . '.png';
+    $localPath = "../public/assets/badge/" . $icon;
+    $webPath = "./public/assets/badge/" . $icon;
     if ($icon) {
         return '<img src="' . htmlspecialchars($webPath) . '" alt="' . htmlspecialchars($badge['nome']) . '" style="width:72px;height:72px;object-fit:contain;border-radius:8px;">';
     }
