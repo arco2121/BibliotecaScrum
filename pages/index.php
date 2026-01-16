@@ -94,8 +94,8 @@ function renderVoto($media) {
 
     <div class="index_wrapper">
         <header class="index_hero">
-            <img src="./public/assets/icon.png" alt="Logo" class="hero_icon">
-            <h1 class="hero_title">Scrum Library</h1>
+            <img src="<?= $path ?>public/assets/icon.png" alt="Logo" class="hero_icon">
+            <h1 class="hero_title young-serif-regular">Scrum Library</h1>
         </header>
 
         <div class="page_contents">
@@ -106,15 +106,15 @@ function renderVoto($media) {
             <?php if ($prestiti_attivi): ?>
                 <section class="index_section">
                     <div class="section_header">
-                        <img src="./public/assets/logo_ligth.png" class="section_icon" alt="icon">
-                        <h2 class="section_title">I tuoi prestiti</h2>
+                        <img src="<?= $path ?>public/assets/icone_categorie/Utente.png" class="section_icon" alt="icon">
+                        <h2 class="section_title young-serif-regular">I tuoi prestiti</h2>
                     </div>
                     <div class="books_grid">
                         <?php foreach ($prestiti_attivi as $libro): ?>
-                            <a href="./libro?isbn=<?= $libro['isbn'] ?>" class="book_item">
+                            <a href="<?= $path ?>libro?isbn=<?= $libro['isbn'] ?>" class="book_item">
                                 <img src="<?= getCoverPath($libro['isbn']) ?>" alt="Cover" class="book_cover">
-                                <div class="voto-box instrument-sans-semibold">
-                                    <img src="./public/assets/ui_icon_star.png" class="star_icon" alt="star">
+                                <div class="voto_box instrument-sans-semibold">
+                                    <img src="<?= $path ?>public/assets/ui_icon_star.png" class="star_icon" alt="star">
                                     <?= $libro['media_voto'] ? number_format((float)$libro['media_voto'], 1) : 'N/V' ?>
                                 </div>
                             </a>
@@ -127,13 +127,13 @@ function renderVoto($media) {
             <section class="index_section">
                 <div class="section_header">
                     <img src="<?= $path ?>public/assets/icone_categorie/Icon_LibriPopolari.png" class="section_icon" alt="icon">
-                    <h2 class="section_title">Libri Popolari</h2>
+                    <h2 class="section_title young-serif-regular">Libri Popolari</h2>
                 </div>
                 <div class="books_grid">
                     <?php foreach ($popolari as $libro): ?>
-                        <a href="./libro?isbn=<?= $libro['isbn'] ?>" class="book_item">
+                        <a href="<?= $path ?>libro?isbn=<?= $libro['isbn'] ?>" class="book_item">
                             <img src="<?= getCoverPath($libro['isbn']) ?>" alt="Cover" class="book_cover">
-                            <div class="voto-box instrument-sans-semibold">
+                            <div class="voto_box instrument-sans-semibold">
                                 <img src="./public/assets/ui_icon_star.png" class="star_icon" alt="star">
                                 <?= $libro['media_voto'] ? number_format((float)$libro['media_voto'], 1) : 'N/V' ?>
                             </div>
@@ -148,14 +148,14 @@ function renderVoto($media) {
                     <section class="index_section">
                         <div class="section_header">
                             <img src="<?= $path ?>public/assets/icone_categorie/<?=$catName ?>.png" class="section_icon" alt="icon">
-                            <h2 class="section_title"><?= htmlspecialchars($catName) ?></h2>
+                            <h2 class="section_title young-serif-regular"><?= htmlspecialchars($catName) ?></h2>
                         </div>
                         <div class="books_grid">
                             <?php foreach ($libriCat as $libro): ?>
-                                <a href="./libro?isbn=<?= $libro['isbn'] ?>" class="book_item">
+                                <a href="<?= $path ?>libro?isbn=<?= $libro['isbn'] ?>" class="book_item">
                                     <img src="<?= getCoverPath($libro['isbn']) ?>" alt="Cover" class="book_cover">
-                                    <div class="voto-box instrument-sans-semibold">
-                                        <img src="./public/assets/ui_icon_star.png" class="star_icon" alt="star">
+                                    <div class="voto_box instrument-sans-semibold">
+                                        <img src="<?= $path ?>public/assets/ui_icon_star.png" class="star_icon" alt="star">
                                         <?= $libro['media_voto'] ? number_format((float)$libro['media_voto'], 1) : 'N/V' ?>
                                     </div>
                                 </a>

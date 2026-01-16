@@ -3,7 +3,7 @@
    --- HERO LOGO ---
 =============================== */
 .index_hero {
-    background-color: #eae3d2;
+    background-color: var(--color_background_dark);
     padding: 100px 40px;
     margin: 30px 40px;
     border-radius: 20px;
@@ -11,6 +11,8 @@
     justify-content: center;
     align-items: center;
     gap: 30px;
+    box-shadow: 0 4px 6px rgba(63, 81, 53, 0.02);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .hero_icon {
@@ -19,15 +21,18 @@
 }
 
 .hero_title {
-    font-family: "Young Serif", serif;
     font-size: 3.8rem;
-    color: #333;
+    color: var(--color_text_dark_green);
     margin: 0;
 }
 
 @media (max-width: 768px) {
     .index_hero {
-        display: none;
+        flex-direction: column;
+    }
+
+    .hero_title {
+        font-size: 2rem;
     }
 }
 /* =============================== */
@@ -43,21 +48,20 @@
 
 .section_header {
     display: flex;
-    align-items: center;
     justify-content: flex-start;
+    align-items: flex-end;
     gap: 15px;
     margin-bottom: 25px;
 }
 
 .section_title {
-    font-family: "Young Serif", serif;
     font-size: 2.2rem;
-    color: #333;
+    color: var(--color_text_dark_green);
     margin: 0;
 }
 
 .section_icon {
-    width: 35px;
+    width: 40px;
     height: auto;
     opacity: 0.8;
 }
@@ -80,6 +84,16 @@
 
 .infos_card_row_div1 { grid-area: 1 / 1 / 2 / 2; margin-right: 5px;}
 .infos_card_row_div2 { grid-area: 1 / 2 / 2 / 3; margin-left: 5px;}
+
+@media (max-width: 768px) {
+    .index_section {
+        padding: 0 15px;
+    }
+
+    .section_header {
+        justify-content: center;
+    }
+}
 /* =============================== */
 
 
@@ -90,10 +104,7 @@
     display: flex;
     gap: 30px;
     overflow-x: auto;
-    padding-top: 25px;
-    padding-bottom: 25px;
-    padding-left: 5px;
-    padding-right: 5px;
+    padding: 25px 5px;
 }
 
 .books_grid::-webkit-scrollbar {
@@ -101,15 +112,15 @@
 }
 
 .books_grid::-webkit-scrollbar-track {
-    background: #faf7f0;
+    background: var(--color_accent_ligth_high);
     border-radius: 10px;
     margin: 0 40px;
 }
 
 .books_grid::-webkit-scrollbar-thumb {
-    background-color: #eae3d2;
+    background-color: var(--color_background_dark);
     border-radius: 10px;
-    border: 2px solid #faf7f0;
+    border: 2px solid var(--color_accent_ligth_high);
 }
 
 .book_item {
@@ -133,7 +144,7 @@
     box-shadow: 0 6px 15px rgba(0,0,0,0.08);
 }
 
-.voto-box {
+.voto_box {
     display: flex;
     align-items: center;
     justify-content: center;

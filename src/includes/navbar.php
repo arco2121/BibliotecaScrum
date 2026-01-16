@@ -124,7 +124,7 @@ if(isset($_POST["logout"])){
             <img src="<?= $path ?>public/assets/logo_ligth.png" class="navbar_logo" alt="Biblioteca Scrum">
         </a>
         <div class="search_container">
-            <form class="search_container" action="search" method="GET">
+            <form class="search_container" action="<?= $path ?>search" method="GET">
                 <button type="submit" class="search_icon_button">
                     <img src="<?= $path ?>public/assets/icon_search_dark.png" alt="Cerca" class="navbar_search_icon">
                 </button>
@@ -156,7 +156,7 @@ if(isset($_POST["logout"])){
                         <img src="<?= $pfpPath ?>" alt="pfp" class="navbar_pfp">
                     </div>
 
-                    <div id="myDropdown" class="dropdown-content">
+                    <div id="navbarDropdown" class="dropdown-content">
                         <a href="./profilo">Profilo</a>
                         
                         <?php if (checkAccess('amministratore') || checkAccess('bibliotecario')) { ?>
@@ -180,7 +180,7 @@ if(isset($_POST["logout"])){
 
 <script>
     function toggleDropdown() {
-        document.getElementById("myDropdown").classList.toggle("show");
+        document.getElementById("navbarDropdown").classList.toggle("show");
     }
 
     window.onclick = function(event) {
