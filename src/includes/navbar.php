@@ -168,7 +168,7 @@ if (isset($_SESSION['codice_utente']) && isset($pdo)) {
                         <img src="<?= $pfpPath ?>" alt="pfp" class="navbar_pfp">
                     </div>
 
-                    <div id="navbarDropdown" class="dropdown_content">
+                    <div id="dropdownProfilo" class="dropdown_content">
                         <a href="<?= $path ?>profilo">Profilo</a>
                         
                         <?php if (checkAccess('amministratore') || checkAccess('bibliotecario')) { ?>
