@@ -99,14 +99,14 @@ if (isset($_SESSION['codice_utente']) && isset($pdo)) {
             <?php if (isset($_SESSION['logged']) && $_SESSION['logged'] === true) { ?>
                 <div class="dropdown">
                     <div onclick="toggleNotifiche()" style="cursor: pointer; display: flex; align-items: center; position: relative;">
-                        <img src="<?= $path ?>public/assets/icon_notification.png" alt="notifica" class="navbar_icon">
+                        <img src="<?= $path ?>public/assets/icon_notification.png" alt="notifica" class="notifica_icon">
                         
                         <?php if (count($lista_notifiche) > 0): ?>
                             <span style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background-color: #dc3545; border-radius: 50%; border: 2px solid #fff;"></span>
                         <?php endif; ?>
                     </div>
 
-                    <div id="dropdownNotifiche" class="dropdown-content notifications">
+                    <div id="dropdownNotifiche" class="dropdown_content notifications">
                         
                         <div class="notifica-header-title">Nuove Notifiche</div>
 
