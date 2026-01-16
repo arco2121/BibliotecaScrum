@@ -284,13 +284,22 @@ $range_date = $stm->fetch(PDO::FETCH_ASSOC);
 
 $media_mensile = 0;
 $mesi_totali = 1;
+
 if ($range_date['inizio']) {
     $d1 = new DateTime($range_date['inizio']);
-    $d2 = new DateTime();
-    $diff = $d1->diff($d2);
-    $mesi_totali = ($diff->y * 12) + $diff->m + 1; // +1 per includere il mese iniziale
+    $d2 = new DateTime($range_date['fine'] ?? 'now'); // usa la data max se disponibile
+    $d2->setTime(23, 59, 59);
+
+    // Calcolo mesi totali considerando mese iniziale fino a quello finale
+    $mesi_totali = ($d2->format('Y') - $d1->format('Y')) * 12 + ($d2->format('n') - $d1->format('n')) + 1;
+
+    // Assicura almeno 1 mese per evitare divisione per zero
+    $mesi_totali = max($mesi_totali, 1);
+
+    // Calcolo media mensile
     $media_mensile = round($totale_libri_letti / $mesi_totali, 1);
 }
+
 
 // CBR STORICO ULTIMI 6 MESI (TUTTE LE COPIE LETTE)
 $stm = $pdo->prepare("
