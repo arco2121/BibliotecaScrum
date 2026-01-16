@@ -167,7 +167,7 @@ if(isset($_POST["logout"])){
                             </div>
                         <?php endif; ?>
 
-                        <form action="" method="post">
+                        <form action="<?= $path ?>logout" method="post">
                             <input type="hidden" name="logout" value="1">
                             <button type="submit">Logout</button>
                         </form>
