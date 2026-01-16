@@ -65,7 +65,16 @@ if (!empty($search_query)) {
     } catch (PDOException $e) {
         $users = [];
     }
-} ?>
+}
+
+function getCoverPath(string $isbn): string {
+    $localPath = "public/bookCover/$isbn.png";
+    if (file_exists($localPath)) {
+        return $localPath;
+    }
+    return "public/assets/book_placeholder.jpg";
+}
+?>
 
 <?php
 // ---------------- HTML HEADER ----------------
