@@ -33,89 +33,9 @@ if(isset($_POST["logout"])){
 
 <style>
     /* FIX IMMAGINE PROFILO NAVBAR */
-    .navbar_pfp {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        object-fit: cover;
-        object-position: center;
-        aspect-ratio: 1 / 1;
-        border: 2px solid #3f5135;
-        display: block;
-        cursor: pointer;
-    }
 
-    #navbar_pfp {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        position: relative;
-    }
 
-    /* STILI DROPDOWN MENU */
-    .dropdown {
-        position: relative;
-        display: inline-block;
-    }
 
-    .dropdown-content {
-        display: none;
-        position: absolute;
-        right: 0;
-        top: 55px; /* Spostato leggermente più in basso */
-        background-color: #eae3d2;
-        min-width: 180px;
-        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-        z-index: 1000;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #e0e0e0;
-    }
-
-    /* UNIFORMAZIONE TOTALE PULSANTI E LINK */
-    .dropdown-content a, 
-    .dropdown-content button {
-        display: block;
-        width: 100%;
-        padding: 14px 20px; /* Padding aumentato per clic più facile */
-        text-align: left;
-        border: none;
-        background: none;
-        background-color: transparent;
-        cursor: pointer;
-        
-        /* Font settings identici per entrambi */
-        font-family: 'Instrument Sans', sans-serif; 
-        font-size: 15px;
-        font-weight: 500; /* O 'normal' a seconda delle preferenze */
-        color: #333333;
-        text-decoration: none;
-        
-        box-sizing: border-box;
-        margin: 0;
-        outline: none;
-        -webkit-appearance: none; /* Rimuove stili default iOS */
-    }
-
-    .dropdown-content a:hover, 
-    .dropdown-content button:hover {
-        background-color: #f5f5f5;
-        color: #000;
-    }
-
-    /* Separatore opzionale tra gli elementi se lo vuoi */
-    .dropdown-content a {
-        border-bottom: 1px solid #f0f0f0;
-    }
-    .dropdown-content form {
-        margin: 0;
-        padding: 0;
-    }
-
-    .show {
-        display: block;
-    }
 </style>
 
 <nav class="navbar">
@@ -128,7 +48,7 @@ if(isset($_POST["logout"])){
                 <button type="submit" class="search_icon_button">
                     <img src="<?= $path ?>public/assets/icon_search_dark.png" alt="Cerca" class="navbar_search_icon">
                 </button>
-                <input type="text" placeholder="Search.." name="search"
+                <input type="text" placeholder="Carca..." name="search"
                     class="navbar_search_input instrument-sans-semibold"
                     value="<?= isset($_GET['search']) ? $_GET['search'] : '' ?>">
             </form>
@@ -156,8 +76,8 @@ if(isset($_POST["logout"])){
                         <img src="<?= $pfpPath ?>" alt="pfp" class="navbar_pfp">
                     </div>
 
-                    <div id="navbarDropdown" class="dropdown-content">
-                        <a href="./profilo">Profilo</a>
+                    <div id="navbarDropdown" class="dropdown_content">
+                        <a href="<?= $path ?>profilo">Profilo</a>
                         
                         <?php if (checkAccess('amministratore') || checkAccess('bibliotecario')) { ?>
                             <a href="<?= $path ?>dashboard">Dashboard</a>
@@ -171,7 +91,7 @@ if(isset($_POST["logout"])){
                 </div>
 
             <?php } else { ?>
-                <a href="./login" class="navbar_link instrument-sans-semibold text_underline">Accedi</a>
+                <a href="<?= $path ?>login" class="navbar_link instrument-sans-semibold text_underline">Accedi</a>
             <?php } ?>
 
         </div>
@@ -185,7 +105,7 @@ if(isset($_POST["logout"])){
 
     window.onclick = function(event) {
         if (!event.target.matches('.navbar_pfp')) {
-            var dropdowns = document.getElementsByClassName("dropdown-content");
+            var dropdowns = document.getElementsByClassName("dropdown_content");
             for (var i = 0; i < dropdowns.length; i++) {
                 var openDropdown = dropdowns[i];
                 if (openDropdown.classList.contains('show')) {
