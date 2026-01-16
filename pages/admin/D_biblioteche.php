@@ -77,119 +77,149 @@ try {
     $class_messaggio = "error";
 }
 
-// Impostazioni per header e navbar
-$title = "Dashboard Biblioteche";
+// ---------------- HTML HEADER ----------------
 $path = "../";
+$title = "Biblioteche - Dashboard";
+$page_css = "../public/css/style_dashboards.css";
 require_once './src/includes/header.php';
 require_once './src/includes/navbar.php';
 ?>
 
-    <!-- INIZIO DEL BODY -->
-    <div class="page_contents">
+<div class="dashboard_container">
 
-        <?php if ($messaggio_db): ?>
-            <div class="message <?= $class_messaggio ?>">
-                <?= htmlspecialchars($messaggio_db) ?>
-            </div>
-        <?php endif; ?>
-
-        <h2>Gestione Biblioteche</h2>
-
-        <!-- Form inserimento nuova biblioteca -->
-        <h3>Inserisci nuova biblioteca</h3>
-        <form method="post">
-            <table>
-                <tr>
-                    <th>Nome</th>
-                    <th>Indirizzo</th>
-                    <th>Latitudine</th>
-                    <th>Longitudine</th>
-                    <th>Orari</th>
-                    <th>Azioni</th>
-                </tr>
-                <tr>
-                    <td>
-                        <input type="text" name="nome" required>
-                    </td>
-                    <td>
-                        <input type="text"  name="indirizzo" required>
-                    </td>
-                    <td>
-                        <input type="number"  name="lat" required>
-                    </td>
-                    <td>
-                        <input type="number" name="lon" required>
-                    </td>
-                    <td>
-                        <input type="text"   name="orari">
-                    </td>
-                    <td>
-                        <input type="hidden" name="inserisci" value="1">
-                        <button type="submit">Inserisci</button>
-                    </td>
-                </tr>
-            </table>
-        </form>
-
-        <!-- Elenco biblioteche esistenti -->
-        <h3>Biblioteche esistenti</h3>
-
-        <?php if (empty($biblioteche)): ?>
-            <p>Nessuna biblioteca presente nel database.</p>
-        <?php else: ?>
-            <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Indirizzo</th>
-                    <th>Latitudine</th>
-                    <th>Longitudine</th>
-                    <th>Orari</th>
-                    <th>Azioni</th>
-                </tr>
-                <?php foreach ($biblioteche as $b): ?>
-                    <tr>
-                        <form method="POST">
-                            <td><?= htmlspecialchars($b['id']) ?></td>
-                            <td>
-                                <input type="text" name="nome" value="<?= htmlspecialchars($b['nome']) ?>" required>
-                            </td>
-                            <td>
-                                <input type="text" name="indirizzo" value="<?= htmlspecialchars($b['indirizzo']) ?>" required>
-                            </td>
-                            <td>
-                                <input type="number" name="lat" value="<?= htmlspecialchars($b['lat']) ?>" required>
-                            </td>
-                            <td>
-                                <input type="number" name="lon" value="<?= htmlspecialchars($b['lon']) ?>" required>
-                            </td>
-                            <td>
-                                <input type="text" name="orari" value="<?= htmlspecialchars($b['orari'] ?? '') ?>"  >
-                            </td>
-                            <td>
-                                <input type="hidden" name="edit_id" value="<?= $b['id'] ?>">
-                                <button type="submit">Salva</button>
-                        </form>
-
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="delete_id" value="<?= $b['id'] ?>">
-                            <button type="submit" onclick="return confirm('Eliminare <?= htmlspecialchars($b['nome']) ?>?')">
-                                Elimina
-                            </button>
-                        </form>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </table>
-        <?php endif; ?>
-
+    <div class="page_header">
+        <h2 class="page_title">Gestione Biblioteche</h2>
+        <div class="header_actions">
+            <button onclick="toggleAddForm()" class="btn_action btn_save">+ Nuova Biblioteca</button>
+        </div>
     </div>
 
-<?php require_once './src/includes/footer.php'; ?>
+    <?php if ($messaggio_db): ?>
+        <div class="alert_msg <?= $class_messaggio == 'error' ? 'alert_error' : 'alert_success' ?>">
+            <?= htmlspecialchars($messaggio_db) ?>
+        </div>
+    <?php endif; ?>
 
-<style>
-    th, td {
-        padding: 15px;
-        border: solid 1px black;
+    <div id="add_library_section" class="add_book_section">
+        <form method="post" class="add_form_wrapper form_spam_protect">
+            <input type="hidden" name="inserisci" value="1">
+
+            <div class="form_group">
+                <label class="form_label">Nome Biblioteca</label>
+                <input type="text" name="nome" class="edit_input" required placeholder="Es. Biblioteca Centrale">
+            </div>
+
+            <div class="form_group">
+                <label class="form_label">Indirizzo</label>
+                <input type="text" name="indirizzo" class="edit_input" required placeholder="Via Roma 1">
+            </div>
+
+            <div class="form_group short">
+                <label class="form_label">Latitudine</label>
+                <input type="number" step="any" name="lat" class="edit_input" required placeholder="45.123">
+            </div>
+
+            <div class="form_group short">
+                <label class="form_label">Longitudine</label>
+                <input type="number" step="any" name="lon" class="edit_input" required placeholder="11.456">
+            </div>
+
+            <div class="form_group">
+                <label class="form_label">Orari</label>
+                <input type="text" name="orari" class="edit_input" placeholder="Lun-Ven 9-18">
+            </div>
+
+            <button type="submit" class="btn_action btn_save trigger_loader" style="margin-bottom: 5px;">Inserisci</button>
+        </form>
+    </div>
+
+    <div class="table_card">
+        <div class="table_responsive">
+            <table class="admin_table" style="min-width: 900px;">
+                <thead>
+                <tr>
+                    <th style="width: 50px;">ID</th>
+                    <th>Nome</th>
+                    <th>Indirizzo</th>
+                    <th style="width: 100px;">Lat</th>
+                    <th style="width: 100px;">Lon</th>
+                    <th>Orari</th>
+                    <th style="width: 180px; text-align: center;">Azioni</th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if (empty($biblioteche)): ?>
+                    <tr><td colspan="7" style="text-align:center; padding: 30px;">Nessuna biblioteca presente.</td></tr>
+                <?php else: ?>
+                <?php foreach ($biblioteche as $b): ?>
+                <tr>
+                    <form method="POST" class="form_spam_protect_row">
+                        <td style="color: #888;"><?= htmlspecialchars($b['id']) ?></td>
+
+                        <td>
+                            <input type="text" name="nome" value="<?= htmlspecialchars($b['nome']) ?>" required class="edit_input">
+                        </td>
+                        <td>
+                            <input type="text" name="indirizzo" value="<?= htmlspecialchars($b['indirizzo']) ?>" required class="edit_input">
+                        </td>
+                        <td>
+                            <input type="number" step="any" name="lat" value="<?= htmlspecialchars($b['lat']) ?>" required class="edit_input">
+                        </td>
+                        <td>
+                            <input type="number" step="any" name="lon" value="<?= htmlspecialchars($b['lon']) ?>" required class="edit_input">
+                        </td>
+                        <td>
+                            <input type="text" name="orari" value="<?= htmlspecialchars($b['orari'] ?? '') ?>" class="edit_input">
+                        </td>
+
+                        <td style="text-align: center;">
+                            <div style="display: flex; gap: 5px; justify-content: center;">
+                                <input type="hidden" name="edit_id" value="<?= $b['id'] ?>">
+                                <button type="submit" class="btn_action btn_save trigger_loader" title="Salva Modifiche">Salva</button>
+                    </form>
+                    <form method="POST" style="display:inline;" onsubmit="return confirm('Sei sicuro di voler eliminare <?= addslashes($b['nome']) ?>?');">
+                        <input type="hidden" name="delete_id" value="<?= $b['id'] ?>">
+                        <button type="submit" class="btn_action btn_delete trigger_loader" title="Elimina">Elimina</button>
+                    </form>
+        </div>
+        </td>
+
+        </tr>
+        <?php endforeach; ?>
+        <?php endif; ?>
+        </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+
+<script>
+    // Funzione per mostrare/nascondere il form di inserimento
+    function toggleAddForm() {
+        var x = document.getElementById("add_library_section");
+        x.style.display = (x.style.display === "block") ? "none" : "block";
     }
-</style>
+
+    // Gestione Loader
+    document.addEventListener('DOMContentLoaded', function() {
+        const overlay = document.getElementById('loading_overlay');
+
+        // Listener sui bottoni con classe trigger_loader
+        document.querySelectorAll('.trigger_loader').forEach(btn => {
+            btn.addEventListener('click', () => overlay.style.display = 'flex');
+        });
+
+        // Listener sui form principali
+        document.querySelectorAll('.form_spam_protect').forEach(form => {
+            form.addEventListener('submit', () => overlay.style.display = 'flex');
+        });
+
+        // Listener sui form delle righe (per il salva)
+        document.querySelectorAll('.form_spam_protect_row').forEach(form => {
+            form.addEventListener('submit', () => overlay.style.display = 'flex');
+        });
+    });
+</script>
+
+<?php require_once './src/includes/footer.php'; ?>
