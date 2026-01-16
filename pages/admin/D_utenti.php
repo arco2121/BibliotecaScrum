@@ -225,185 +225,190 @@ try {
 } catch (PDOException $e) {
     die("Errore DB: " . $e->getMessage());
 }
-?>
 
-<?php
+// ---------------- HTML HEADER ----------------
 $title = "Dashboard Utenti";
 $path = "../";
+$page_css = "../public/css/style_dashboards.css";
 require_once './src/includes/header.php';
 require_once './src/includes/navbar.php';
 ?>
 
-    <!-- INIZIO DEL BODY -->
+    <div id="loading_overlay">
+        <div class="spinner"></div>
+        <div class="loading_text">Elaborazione...</div>
+    </div>
 
-    <div class="page_contents">
+    <div class="dashboard_container_larger">
+
+        <div class="page_header">
+            <h2 class="page_title">Gestione Utenti</h2>
+            <div class="header_actions">
+                <button onclick="toggleAddForm()" class="btn_action btn_save">+ Nuovo Utente</button>
+            </div>
+        </div>
 
         <?php if (!empty($messaggio_db)): ?>
-            <div style="padding: 10px; background: <?= $class_messaggio == 'error' ? '#f8d7da' : '#d4edda' ?>; border: 1px solid <?= $class_messaggio == 'error' ? '#f5c6cb' : '#c3e6cb' ?>; margin: 10px 0; color: <?= $class_messaggio == 'error' ? '#721c24' : '#155724' ?>;">
+            <div class="alert_msg <?= $class_messaggio == 'error' ? 'alert_error' : 'alert_success' ?>">
                 <?= htmlspecialchars($messaggio_db) ?>
             </div>
         <?php endif; ?>
 
-        <h2>Inserisci nuovo utente</h2>
+        <div id="add_user_section" class="add_book_section">
+            <form method="POST" class="add_form_wrapper form_spam_protect">
+                <input type="hidden" name="inserisci" value="1">
 
-        <table style="margin-bottom: 40px">
-            <tr>
-                <th>Username</th>
-                <th>Nome</th>
-                <th>Cognome</th>
-                <th>Codice Fiscale</th>
-                <th>Email</th>
-                <th>Password</th>
-                <th>Ruolo</th>
-                <th>Azioni</th>
+                <div class="form_group">
+                    <label class="form_label">Username</label>
+                    <input type="text" name="username" class="edit_input" placeholder="Es: User123" required>
+                </div>
+                <div class="form_group">
+                    <label class="form_label">Nome</label>
+                    <input type="text" name="nome" class="edit_input" required>
+                </div>
+                <div class="form_group">
+                    <label class="form_label">Cognome</label>
+                    <input type="text" name="cognome" class="edit_input" required>
+                </div>
+                <div class="form_group">
+                    <label class="form_label">Codice Fiscale</label>
+                    <input type="text" name="codice_fiscale" class="edit_input" maxlength="16" placeholder="16 caratteri" required>
+                </div>
+                <div class="form_group">
+                    <label class="form_label">Email</label>
+                    <input type="email" name="email" class="edit_input" required>
+                </div>
+                <div class="form_group">
+                    <label class="form_label">Password</label>
+                    <input type="password" name="password_hash" class="edit_input" required>
+                </div>
+
+                <div class="form_group" style="min-width: 300px;">
+                    <label class="form_label">Assegna Ruoli</label>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; background: #faf9f6; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <div>
+                            <input type="checkbox" name="ruolo0" value="1" id="ins_ruolo0"> <label for="ins_ruolo0">Studente</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="ruolo1" value="1" id="ins_ruolo1"> <label for="ins_ruolo1">Docente</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="ruolo2" value="1" id="ins_ruolo2"> <label for="ins_ruolo2">Bibliotecario</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" name="ruolo3" value="1" id="ins_ruolo3"> <label for="ins_ruolo3">Admin</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn_action btn_save trigger_loader" style="margin-bottom: 5px;">Crea Utente</button>
+            </form>
+        </div>
+
+        <div class="table_card">
+            <div class="table_responsive">
+                <table class="admin_table" style="min-width: 1800px;">
+                    <thead>
+                    <tr>
+                        <th style="width: 80px;">Codice</th>
+                        <th>Username</th>
+                        <th>Nome</th>
+                        <th>Cognome</th>
+                        <th>CF</th>
+                        <th>Email</th>
+                        <th>Password</th>
+                        <th style="width: 60px; text-align:center;" title="Login Bloccato">Login Bloccato</th>
+                        <th style="width: 60px; text-align:center;" title="Account Bloccato">Account Bloccato</th>
+                        <th style="width: 50px;" title="Livello Privato">Lvl</th>
+                        <th style="width: 140px;">Data Creazione</th>
+                        <th style="width: 50px; text-align:center;" title="Affidabile">Aff</th>
+                        <th style="width: 50px; text-align:center;" title="Email Confermata">Ver</th>
+                        <th style="width: 150px;">Ruoli</th>
+                        <th style="width: 160px; text-align: center;">Azioni</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($utenti as $u): ?>
+                    <tr>
+                        <form method="POST" class="form_spam_protect_row">
+                            <td style="color: #888;">
+                                <?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>
+                                <input type="hidden" name="codice_alfanumerico" value="<?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>">
+                            </td>
+
+                            <td><input type="text" name="username" class="edit_input" value="<?= htmlspecialchars($u['username'] ?? '') ?>" required></td>
+                            <td><input type="text" name="nome" class="edit_input" value="<?= htmlspecialchars($u['nome'] ?? '') ?>" required></td>
+                            <td><input type="text" name="cognome" class="edit_input" value="<?= htmlspecialchars($u['cognome'] ?? '') ?>" required></td>
+                            <td><input type="text" name="codice_fiscale" class="edit_input" value="<?= htmlspecialchars($u['codice_fiscale'] ?? '') ?>" maxlength="16" required></td>
+                            <td><input type="email" name="email" class="edit_input" value="<?= htmlspecialchars($u['email'] ?? '') ?>" required></td>
+
+                            <td><input type="password" name="password_hash" class="edit_input" placeholder="*****" value="*****"></td>
+
+                            <td style="text-align:center;">
+                                <input type="checkbox" name="login_bloccato_check" value="1" <?= !empty($u['login_bloccato']) ? 'checked' : '' ?>>
+                            </td>
+                            <td style="text-align:center;">
+                                <input type="checkbox" name="account_bloccato" value="1" <?= !empty($u['account_bloccato']) ? 'checked' : '' ?>>
+                            </td>
+                            <td>
+                                <input type="number" name="livello_privato" class="edit_input" value="<?= htmlspecialchars($u['livello_privato'] ?? 0) ?>" min="0" max="10">
+                            </td>
+                            <td>
+                                <input type="datetime-local" name="data_creazione" class="edit_input" style="font-size: 0.8rem;" value="<?= isset($u['data_creazione']) ? date('Y-m-d\TH:i', strtotime($u['data_creazione'])) : '' ?>" required>
+                            </td>
+                            <td style="text-align:center;">
+                                <input type="checkbox" name="affidabile" value="1" <?= !empty($u['affidabile']) ? 'checked' : '' ?>>
+                            </td>
+                            <td style="text-align:center;">
+                                <input type="checkbox" name="email_confermata" value="1" <?= !empty($u['email_confermata']) ? 'checked' : '' ?>>
+                            </td>
+
+                            <td style="font-size: 0.85rem;">
+                                <div style="display:flex; flex-direction:column; gap:2px;">
+                                    <label><input type="checkbox" name="ruolo0" value="1" <?= !empty($u['studente']) ? 'checked' : '' ?>> Stud</label>
+                                    <label><input type="checkbox" name="ruolo1" value="1" <?= !empty($u['docente']) ? 'checked' : '' ?>> Doc</label>
+                                    <label><input type="checkbox" name="ruolo2" value="1" <?= !empty($u['bibliotecario']) ? 'checked' : '' ?>> Biblio</label>
+                                    <label><input type="checkbox" name="ruolo3" value="1" <?= !empty($u['amministratore']) ? 'checked' : '' ?>> Admin</label>
+                                </div>
+                            </td>
+
+                            <td style="text-align: center;">
+                                <div style="display: flex; gap: 5px; justify-content: center; flex-direction: column;">
+                                    <input type="hidden" name="edit_id" value="<?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>">
+                                    <button type="submit" class="btn_action btn_save trigger_loader" style="font-size: 0.8rem; padding: 5px 10px;">Salva</button>
+                        </form>
+                        <form method="POST" style="display:inline;" onsubmit="return confirm('ATTENZIONE: Verranno eliminate anche tutte le recensioni di questo utente.\n\nConfermi eliminazione?')">
+                            <input type="hidden" name="delete_id" value="<?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>">
+                            <button type="submit" class="btn_action btn_delete trigger_loader" style="font-size: 0.8rem; padding: 5px 10px;">Elimina</button>
+                        </form>
+            </div>
+            </td>
             </tr>
-
-            <tr>
-                <form method="POST">
-                    <td><input type="text" name="username" placeholder="Es: TestUsername1" required></td>
-                    <td><input type="text" name="nome" required></td>
-                    <td><input type="text" name="cognome" required></td>
-                    <td><input type="text" name="codice_fiscale" maxlength="16" placeholder="16 caratteri" required></td>
-                    <td><input type="email" name="email" required></td>
-                    <td><input type="password" name="password_hash" required></td>
-                    <td>
-                        <input type="checkbox" name="ruolo0" value="1" id="ins_ruolo0">
-                        <label for="ins_ruolo0">Studente</label><br>
-                        <input type="checkbox" name="ruolo1" value="1" id="ins_ruolo1">
-                        <label for="ins_ruolo1">Docente</label><br>
-                        <input type="checkbox" name="ruolo2" value="1" id="ins_ruolo2">
-                        <label for="ins_ruolo2">Bibliotecario</label><br>
-                        <input type="checkbox" name="ruolo3" value="1" id="ins_ruolo3">
-                        <label for="ins_ruolo3">Amministratore</label><br>
-                    </td>
-                    <td>
-                        <input type="hidden" name="inserisci" value="1">
-                        <button type="submit">Inserisci</button>
-                    </td>
-                </form>
-            </tr>
-        </table>
-
-        <h2>Utenti registrati</h2>
-
-        <table>
-            <tr>
-                <th>Codice</th>
-                <th>Username</th>
-                <th>Nome</th>
-                <th>Cognome</th>
-                <th>Codice Fiscale</th>
-                <th>Email</th>
-                <th>Password</th>
-                <th>Login Bloccato</th>
-                <th>Account Bloccato</th>
-                <th>Livello Privato</th>
-                <th>Data Creazione</th>
-                <th>Affidabile</th>
-                <th>Email Confermata</th>
-                <th>Ruolo</th>
-                <th>Azioni</th>
-            </tr>
-
-            <?php foreach ($utenti as $u): ?>
-                <tr>
-                    <form method="POST">
-                        <td>
-                            <?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>
-                            <input type="hidden" name="codice_alfanumerico"
-                                   value="<?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>">
-                        </td>
-                        <td>
-                            <input type="text" name="username"
-                                   value="<?= htmlspecialchars($u['username'] ?? '') ?>" required>
-                        </td>
-                        <td>
-                            <input type="text" name="nome"
-                                   value="<?= htmlspecialchars($u['nome'] ?? '') ?>" required>
-                        </td>
-
-                        <td>
-                            <input type="text" name="cognome"
-                                   value="<?= htmlspecialchars($u['cognome'] ?? '') ?>" required>
-                        </td>
-
-                        <td>
-                            <input type="text" name="codice_fiscale"
-                                   value="<?= htmlspecialchars($u['codice_fiscale'] ?? '') ?>"
-                                   maxlength="16" required>
-                        </td>
-
-                        <td>
-                            <input type="email" name="email"
-                                   value="<?= htmlspecialchars($u['email'] ?? '') ?>" required>
-                        </td>
-
-                        <td>
-                            <input type="password" name="password_hash" placeholder="Lascia ***** per non modificare" value="*****">
-                        </td>
-
-                        <td>
-                            <input type="checkbox" name="login_bloccato_check"
-                                   value="1" <?= !empty($u['login_bloccato']) ? 'checked' : '' ?>>
-                        </td>
-
-                        <td>
-                            <input type="checkbox" name="account_bloccato"
-                                   value="1" <?= !empty($u['account_bloccato']) ? 'checked' : '' ?>>
-                        </td>
-
-                        <td>
-                            <input type="number" name="livello_privato"
-                                   value="<?= htmlspecialchars($u['livello_privato'] ?? 0) ?>"
-                                   min="0" max="10">
-                        </td>
-
-                        <td>
-                            <input type="datetime-local" name="data_creazione"
-                                   value="<?= isset($u['data_creazione']) ? date('Y-m-d\TH:i', strtotime($u['data_creazione'])) : '' ?>" required>
-                        </td>
-
-                        <td>
-                            <input type="checkbox" name="affidabile"
-                                   value="1" <?= !empty($u['affidabile']) ? 'checked' : '' ?>>
-                        </td>
-
-                        <td>
-                            <input type="checkbox" name="email_confermata"
-                                   value="1" <?= !empty($u['email_confermata']) ? 'checked' : '' ?>>
-                        </td>
-
-                        <td>
-                            <input type="checkbox" name="ruolo0" value="1" <?= !empty($u['studente']) ? 'checked' : '' ?>>
-                            <label>Studente</label><br>
-                            <input type="checkbox" name="ruolo1" value="1" <?= !empty($u['docente']) ? 'checked' : '' ?>>
-                            <label>Docente</label><br>
-                            <input type="checkbox" name="ruolo2" value="1" <?= !empty($u['bibliotecario']) ? 'checked' : '' ?>>
-                            <label>Bibliotecario</label><br>
-                            <input type="checkbox" name="ruolo3" value="1" <?= !empty($u['amministratore']) ? 'checked' : '' ?>>
-                            <label>Admin</label><br>
-                        </td>
-
-                        <td>
-                            <input type="hidden" name="edit_id" value="<?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>">
-                            <button type="submit">Salva</button>
-                    </form>
-
-                    <form method="POST" style="display:inline;" onsubmit="return confirm('ATTENZIONE: Verranno eliminate anche tutte le recensioni di questo utente.\n\nConfermi eliminazione?')">
-                        <input type="hidden" name="delete_id" value="<?= htmlspecialchars($u['codice_alfanumerico'] ?? '') ?>">
-                        <button type="submit">Elimina</button>
-                    </form>
-                    </td>
-                </tr>
             <?php endforeach; ?>
-        </table>
-
+            </tbody>
+            </table>
+        </div>
+    </div>
     </div>
 
+    <script>
+        function toggleAddForm() {
+            var x = document.getElementById("add_user_section");
+            x.style.display = (x.style.display === "block") ? "none" : "block";
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const overlay = document.getElementById('loading_overlay');
+            document.querySelectorAll('.trigger_loader').forEach(btn => {
+                btn.addEventListener('click', () => overlay.style.display = 'flex');
+            });
+            document.querySelectorAll('.form_spam_protect').forEach(form => {
+                form.addEventListener('submit', () => overlay.style.display = 'flex');
+            });
+            document.querySelectorAll('.form_spam_protect_row').forEach(form => {
+                form.addEventListener('submit', () => overlay.style.display = 'flex');
+            });
+        });
+    </script>
+
 <?php require_once './src/includes/footer.php'; ?>
-<style>
-    th, td {
-        padding: 15px;
-        border: solid 1px black;
-    }
-</style>
