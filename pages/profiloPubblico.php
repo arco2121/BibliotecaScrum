@@ -34,7 +34,7 @@ $stm = $pdo->prepare("
     WHERE p.codice_alfanumerico = ? AND p.data_restituzione IS NOT NULL
     ORDER BY p.data_restituzione DESC
 ");
-$stm->execute([$uid]);
+$stm->execute([$utente['codice_alfanumerico']]);
 $libri_letti = $stm->fetchAll(PDO::FETCH_ASSOC);
 
 $badges = [];
@@ -48,7 +48,7 @@ if (isset($uid) && $uid) {
             WHERE ub.codice_alfanumerico = ?
             ORDER BY ub.livello DESC, b.nome ASC
         ");
-        $stm->execute([$uid]);
+        $stm->execute([$utente['codice_alfanumerico']]);
         $badges = $stm->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         $messaggio_db = "Errore caricamento badge: " . $e->getMessage();
@@ -125,7 +125,7 @@ function formatCounter($dateTarget) {
 
            <div class="info_column">
                <?php
-               $pfpPath = 'public/pfp/' . htmlspecialchars($uid) . '.png';
+               $pfpPath = 'public/pfp/' . htmlspecialchars($utente['codice_alfanumerico']) . '.png';
                if (!file_exists($pfpPath)) { $pfpPath = 'public/assets/base_pfp.png'; }
                ?>
                <div class="pfp-wrapper">

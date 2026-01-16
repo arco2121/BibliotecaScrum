@@ -48,11 +48,11 @@ if (isset($_POST['ajax_livello']) && $uid) {
         $chk = $pdo->prepare("SELECT 1 FROM utenti WHERE livello_privato = ? AND codice_alfanumerico != ?");
         $chk->execute([$new_livello, $uid]);
         if ($chk->fetch()) {
-            echo json_encode(['status' => 'error', 'message' => 'Username già occupato!']);
+            echo json_encode(['status' => 'error', 'message' => 'Livello già occupato!']);
         } else {
             $upd = $pdo->prepare("UPDATE utenti SET livello_privato = ? WHERE codice_alfanumerico = ?");
             $upd->execute([$new_livello, $uid]);
-            echo json_encode(['status' => 'success', 'message' => 'Username aggiornato con successo!']);
+            echo json_encode(['status' => 'success', 'message' => 'Livello aggiornato con successo!']);
         }
     } catch (Exception $e) {
         echo json_encode(['status' => 'error', 'message' => 'Errore DB: ' . $e->getMessage()]);
@@ -330,11 +330,12 @@ if (isset($uid) && $uid) {
 function badgeIconHtmlProfile(array $badge) {
     $icon = $badge['icona'] ?? '';
     // Primo tentativo: file in public/badges/
-    $localPath = __DIR__ . "/../public/badges/" . $icon;
-    $webPath = "./public/badges/" . $icon;
-    if ($icon && file_exists($localPath)) {
+    $localPath = "../public/assets/badge/" . $icon. '.png';
+    $webPath = "./public/assets/badge/" . $icon . '.png';
+    if ($icon && file_exists($webPath)) {
         return '<img src="' . htmlspecialchars($webPath) . '" alt="' . htmlspecialchars($badge['nome']) . '" style="width:72px;height:72px;object-fit:contain;border-radius:8px;">';
     }
+    var_dump($localPath);
     // Non uso SVG inline qui per sicurezza — fallback lettera
     $letter = strtoupper(substr($badge['nome'] ?? 'B', 0, 1));
     return '<div style="width:72px;height:72px;border-radius:10px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:28px;color:#666;">' .
