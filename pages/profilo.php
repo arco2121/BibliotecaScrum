@@ -176,7 +176,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'paga_multa_user') {
                 FROM multe m
                 JOIN prestiti p ON m.id_prestito = p.id_prestito
                 WHERE m.id_multa = ? AND p.codice_alfanumerico = ? AND m.pagata = 0
-                WHERE m.id_multa = ? AND p.codice_alfanumerico = ? AND m.pagata = 0
             ");
             $chk->execute([$id_multa_target, $uid]);
 
@@ -647,7 +646,7 @@ function formatCounter($dateTarget) {
                 <div id="tessera-card">
                     <div class="tessera-header">BibliotecaScrum</div>
                     <div class="tessera-user"><?= htmlspecialchars(($utente['nome'] ?? '') . ' ' . ($utente['cognome'] ?? '')) ?></div>
-                    <div class="tessera-barcode">*8473264*</div>
+                    <div class="tessera-barcode">*<?= strtoupper(htmlspecialchars($utente['codice_alfanumerico'] ?? $uid)) ?>*</div>
                 </div>
                 <div class="modal-actions">
                     <button class="btn-action btn-download" onclick="scaricaPNG()">Scarica PNG</button>
