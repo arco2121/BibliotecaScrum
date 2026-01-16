@@ -38,6 +38,7 @@ $whitelist = [
     '/bibliotecario/dashboard-gestioneprestiti' => 'pages/bibliotecario/D_gestioneprestiti.php',
     '/bibliotecario/dashboard-aggiuntaprestiti' => 'pages/bibliotecario/D_aggiuntaprestiti.php',
     '/bibliotecario/dashboard-richieste' => 'pages/bibliotecario/D_richieste.php',
+    '/bibliotecario/gestione-multe' => 'pages/bibliotecario/gestione-multe.php',
 
 ];
 

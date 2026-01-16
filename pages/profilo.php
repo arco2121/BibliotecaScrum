@@ -24,7 +24,6 @@ if (!isset($pdo)) { die('Errore connessione DB.'); }
 /* -----------------------------------------------------------
    GESTIONE AJAX (Username & Email)
 ----------------------------------------------------------- */
-
 if (isset($_POST['ajax_username']) && $uid) {
     header('Content-Type: application/json');
     $new_user = trim($_POST['ajax_username']);
@@ -136,23 +135,66 @@ if (isset($_POST['action']) && $_POST['action'] === 'annulla_prenotazione') {
 
 // 4. RICHIEDI ESTENSIONE PRESTITO
 if (isset($_POST['action']) && $_POST['action'] === 'richiedi_estensione') {
-    $id_copia_ext = filter_input(INPUT_POST, 'id_copia', FILTER_VALIDATE_INT);
+    $id_prestito_target = filter_input(INPUT_POST, 'id_prestito', FILTER_VALIDATE_INT);
     $scadenza_attuale = $_POST['scadenza_attuale'] ?? null;
 
-    if ($id_copia_ext && $scadenza_attuale) {
+    if ($id_prestito_target && $scadenza_attuale) {
         try {
-            $chk = $pdo->prepare("SELECT 1 FROM richieste_bibliotecario WHERE codice_alfanumerico = ? AND id_copia = ? AND stato = 'in_attesa'");
-            $chk->execute([$uid, $id_copia_ext]);
+            // Verifica che il prestito appartenga all'utente loggato E controlla il numero di rinnovi
+            $chkOwner = $pdo->prepare("SELECT num_rinnovi FROM prestiti WHERE id_prestito = ? AND codice_alfanumerico = ?");
+            $chkOwner->execute([$id_prestito_target, $uid]);
+            $loanData = $chkOwner->fetch(PDO::FETCH_ASSOC);
+            
+            if ($loanData) {
+                // CONTROLLO LIMITE RINNOVI (Max 1)
+                if ($loanData['num_rinnovi'] >= 1) {
+                    $messaggio_alert = "Hai già effettuato il numero massimo di rinnovi per questo libro.";
+                } else {
+                    // Verifica se c'è già una richiesta pendente per questo ID PRESTITO
+                    $chk = $pdo->prepare("SELECT 1 FROM richieste_bibliotecario WHERE id_prestito = ? AND stato = 'in_attesa'");
+                    $chk->execute([$id_prestito_target]);
 
-            if ($chk->fetch()) {
-                $messaggio_alert = "Hai già una richiesta in attesa per questo libro.";
+                    if ($chk->fetch()) {
+                        $messaggio_alert = "Hai già una richiesta in attesa per questo prestito.";
+                    } else {
+                        $stmt = $pdo->prepare("INSERT INTO richieste_bibliotecario (id_prestito, tipo_richiesta, data_scadenza_richiesta) VALUES (?, 'estensione_prestito', ?)");
+                        $stmt->execute([$id_prestito_target, $scadenza_attuale]);
+                        $messaggio_alert = "Richiesta di estensione inviata al bibliotecario!";
+                    }
+                }
             } else {
-                $stmt = $pdo->prepare("INSERT INTO richieste_bibliotecario (codice_alfanumerico, tipo_richiesta, id_copia, data_scadenza_richiesta) VALUES (?, 'estensione_prestito', ?, ?)");
-                $stmt->execute([$uid, $id_copia_ext, $scadenza_attuale]);
-                $messaggio_alert = "Richiesta di estensione inviata al bibliotecario!";
+                $messaggio_alert = "Prestito non valido.";
             }
         } catch (Exception $e) {
             $messaggio_alert = "Errore richiesta: " . $e->getMessage();
+        }
+    }
+}
+
+// 5. PAGAMENTO MULTA (Simulazione)
+if (isset($_POST['action']) && $_POST['action'] === 'paga_multa_user') {
+    $id_multa_target = filter_input(INPUT_POST, 'id_multa', FILTER_VALIDATE_INT);
+    if ($id_multa_target) {
+        try {
+            // Verifica che la multa appartenga a un prestito dell'utente loggato
+            $chk = $pdo->prepare("
+                SELECT m.id_multa 
+                FROM multe m
+                JOIN prestiti p ON m.id_prestito = p.id_prestito
+                WHERE m.id_multa = ? AND p.codice_alfanumerico = ? AND m.pagata = 0
+            ");
+            $chk->execute([$id_multa_target, $uid]);
+            
+            if ($chk->fetch()) {
+                // Esegui pagamento
+                $upd = $pdo->prepare("UPDATE multe SET pagata = 1 WHERE id_multa = ?");
+                $upd->execute([$id_multa_target]);
+                $messaggio_alert = "Pagamento registrato con successo! Grazie.";
+            } else {
+                $messaggio_alert = "Impossibile elaborare il pagamento.";
+            }
+        } catch (Exception $e) {
+            $messaggio_alert = "Errore transazione: " . $e->getMessage();
         }
     }
 }
@@ -165,39 +207,41 @@ $utente = $stm->fetch(PDO::FETCH_ASSOC);
 
 /* ---- Dati Accessori ---- */
 
-// PRESTITI ATTIVI
+// A. MULTE ATTIVE
+$stm = $pdo->prepare("
+    SELECT m.id_multa, m.importo, m.causale, m.data_creata, l.titolo
+    FROM multe m
+    JOIN prestiti p ON m.id_prestito = p.id_prestito
+    JOIN copie c ON p.id_copia = c.id_copia
+    JOIN libri l ON c.isbn = l.isbn
+    WHERE p.codice_alfanumerico = ? AND m.pagata = 0
+    ORDER BY m.data_creata DESC
+");
+$stm->execute([$uid]);
+$multe_attive = $stm->fetchAll(PDO::FETCH_ASSOC);
+
+// B. PRESTITI ATTIVI
 $stm = $pdo->prepare("
     SELECT 
+        p.id_prestito,
         c.isbn, 
         c.id_copia,
         p.data_scadenza,
+        p.num_rinnovi,
         r.stato as stato_richiesta
     FROM prestiti p 
     JOIN copie c ON p.id_copia = c.id_copia 
-    LEFT JOIN richieste_bibliotecario r ON r.id_copia = p.id_copia AND r.codice_alfanumerico = p.codice_alfanumerico AND r.stato = 'in_attesa'
+    LEFT JOIN richieste_bibliotecario r ON r.id_prestito = p.id_prestito AND r.stato = 'in_attesa'
     WHERE p.codice_alfanumerico = ? AND p.data_restituzione IS NULL
     ORDER BY p.data_scadenza ASC
 ");
 $stm->execute([$uid]);
 $prestiti_attivi = $stm->fetchAll(PDO::FETCH_ASSOC);
 
-// PRENOTAZIONI ATTIVE
+// C. PRENOTAZIONI ATTIVE
 $stm = $pdo->prepare("
-    SELECT 
-        c.isbn, 
-        p.data_prenotazione, 
-        p.id_prenotazione,
-        p.id_copia,
-        (
-            SELECT COUNT(*) 
-            FROM prenotazioni p2 
-            WHERE p2.id_copia = p.id_copia 
-              AND p2.data_assegnazione IS NULL 
-              AND (
-                  p2.data_prenotazione < p.data_prenotazione 
-                  OR (p2.data_prenotazione = p.data_prenotazione AND p2.id_prenotazione < p.id_prenotazione)
-              )
-        ) as utenti_davanti
+    SELECT c.isbn, p.data_prenotazione, p.id_prenotazione, p.id_copia,
+        (SELECT COUNT(*) FROM prenotazioni p2 WHERE p2.id_copia = p.id_copia AND p2.data_assegnazione IS NULL AND (p2.data_prenotazione < p.data_prenotazione OR (p2.data_prenotazione = p.data_prenotazione AND p2.id_prenotazione < p.id_prenotazione))) as utenti_davanti
     FROM prenotazioni p 
     JOIN copie c ON p.id_copia = c.id_copia
     WHERE p.codice_alfanumerico = ? AND p.data_assegnazione IS NULL
@@ -206,51 +250,31 @@ $stm = $pdo->prepare("
 $stm->execute([$uid]);
 $prenotazioni = $stm->fetchAll(PDO::FETCH_ASSOC);
 
-// STORICO LIBRI LETTI
+// D. STORICO LIBRI LETTI
 $stm = $pdo->prepare("
-    SELECT DISTINCT c.isbn 
-    FROM prestiti p 
-    JOIN copie c ON p.id_copia = c.id_copia 
-    WHERE p.codice_alfanumerico = ? 
-      AND p.data_restituzione IS NOT NULL
+    SELECT DISTINCT c.isbn FROM prestiti p JOIN copie c ON p.id_copia = c.id_copia 
+    WHERE p.codice_alfanumerico = ? AND p.data_restituzione IS NOT NULL
     ORDER BY p.data_restituzione DESC
 ");
 $stm->execute([$uid]);
 $libri_letti = $stm->fetchAll(PDO::FETCH_ASSOC);
 
-/* ---- LOGICA STATISTICHE AVANZATE ---- */
+// STATISTICHE
 $totale_libri_letti = count($libri_letti);
-
-// Calcolo Media e Tempo di Lettura
 $stm = $pdo->prepare("SELECT MIN(data_restituzione) as inizio, MAX(data_restituzione) as fine FROM prestiti WHERE codice_alfanumerico = ? AND data_restituzione IS NOT NULL");
 $stm->execute([$uid]);
 $range_date = $stm->fetch(PDO::FETCH_ASSOC);
-
 $media_mensile = 0;
 if ($range_date['inizio']) {
-    $d1 = new DateTime($range_date['inizio']);
-    $d2 = new DateTime();
-    $diff = $d1->diff($d2);
-    $mesi_totali = ($diff->y * 12) + $diff->m;
-    if ($mesi_totali < 1) $mesi_totali = 1;
+    $d1 = new DateTime($range_date['inizio']); $d2 = new DateTime(); $diff = $d1->diff($d2);
+    $mesi_totali = ($diff->y * 12) + $diff->m; if ($mesi_totali < 1) $mesi_totali = 1;
     $media_mensile = round($totale_libri_letti / $mesi_totali, 1);
 }
-
-// Storico ultimi 6 mesi per Grafico
-$stm = $pdo->prepare("
-    SELECT DATE_FORMAT(data_restituzione, '%b %Y') as mese, COUNT(*) as qta
-    FROM prestiti 
-    WHERE codice_alfanumerico = ? AND data_restituzione IS NOT NULL
-      AND data_restituzione >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-    GROUP BY mese ORDER BY MIN(data_restituzione) ASC
-");
+$stm = $pdo->prepare("SELECT DATE_FORMAT(data_restituzione, '%b %Y') as mese, COUNT(*) as qta FROM prestiti WHERE codice_alfanumerico = ? AND data_restituzione IS NOT NULL AND data_restituzione >= DATE_SUB(NOW(), INTERVAL 6 MONTH) GROUP BY mese ORDER BY MIN(data_restituzione) ASC");
 $stm->execute([$uid]);
 $storico_stat = $stm->fetchAll(PDO::FETCH_ASSOC);
-
-// Trova il massimo per scalare il grafico
 $max_libri_mese = 0;
 foreach($storico_stat as $s) { if($s['qta'] > $max_libri_mese) $max_libri_mese = $s['qta']; }
-
 $badges = [];
 
 require './src/includes/header.php';
@@ -258,20 +282,14 @@ require './src/includes/navbar.php';
 
 function getCoverPath(string $isbn): string {
     $localPath = "public/bookCover/$isbn.png";
-    if (file_exists($localPath)) { return $localPath; }
-    return "public/assets/book_placeholder.jpg";
+    return file_exists($localPath) ? $localPath : "public/assets/book_placeholder.jpg";
 }
 
 function formatCounter($dateTarget) {
     if (!$dateTarget) return ["N/D", "grey"];
-    $today = new DateTime();
-    $target = new DateTime($dateTarget);
-    $target->setTime(23, 59, 59);
-    $diff = $today->diff($target);
-    $days = $diff->days;
-    if ($diff->invert) { $days = -$days; }
-    $dateString = $target->format('d/m/Y');
-    $text = "Scadenza: $dateString";
+    $today = new DateTime(); $target = new DateTime($dateTarget); $target->setTime(23, 59, 59);
+    $diff = $today->diff($target); $days = $diff->days; if ($diff->invert) { $days = -$days; }
+    $dateString = $target->format('d/m/Y'); $text = "Scadenza: $dateString";
     if ($days < 0) { return ["$text (Scaduto da " . abs($days) . " gg)", "#c0392b"]; }
     elseif ($days <= 2) { return ["$text ($days giorni)", "#e67e22"]; }
     else { return ["$text ($days giorni)", "#27ae60"]; }
@@ -282,7 +300,6 @@ function formatCounter($dateTarget) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Libre+Barcode+39+Text&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
     <style>
         body { font-family: 'Poppins', sans-serif; }
         .grid { display: flex; flex-wrap: wrap; gap: 25px; }
@@ -296,6 +313,8 @@ function formatCounter($dateTarget) {
         .btn-mini-danger { background-color: #e74c3c; color: white; }
         .btn-mini-action { background-color: #3498db; color: white; }
         .btn-mini-pending { background-color: #f39c12; color: white; cursor: default; }
+        .btn-mini-limit { background-color: #7f8c8d; color: white; cursor: not-allowed; }
+        
         .info_column { display: flex; flex-direction: column; width: auto; justify-content: flex-start; align-items: center; gap: 10px; }
         .info_line { display: flex; flex-direction: row; width: 100%; justify-content: space-between; align-items: flex-start; gap: 20px; padding-top: 20px; }
         .pfp-wrapper { position: relative; width: 240px; height: 240px; border-radius: 50%; border: 5px solid #3f5135; overflow: hidden; cursor: pointer; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
@@ -318,18 +337,96 @@ function formatCounter($dateTarget) {
         .btn-action-email { background-color: #3f5135; color: white; border: none; border-radius: 4px; padding: 8px; cursor: pointer; font-family: 'Poppins', sans-serif; width: 80px; transition: background 0.3s; }
         .btn-action-email:hover { background-color: #2c3a24; }
         .btn-success-anim { background-color: #27ae60 !important; }
-        .modal-overlay { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; backdrop-filter: blur(2px); }
-        .modal-content { background-color: white; padding: 20px; border-radius: 16px; width: auto; max-width: 90%; text-align: center; position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; font-weight: 600; color: #aaa; cursor: pointer; z-index: 1001; font-family: sans-serif; }
+        
+        /* STYLE MULTE COMPATTO */
+        .fine-container {
+            width: 100%;
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .fine-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-left: 4px solid #c0392b;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: transform 0.2s;
+        }
+        .fine-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        .fine-info { 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+            margin-right: 10px;
+        }
+        
+        .fine-title { 
+            font-weight: 600; 
+            font-size: 0.85rem; 
+            color: #c0392b; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+        }
+        
+        .fine-meta { 
+            font-size: 0.75rem; 
+            color: #666; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis;
+        }
+
+        .fine-actions { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-end; 
+            gap: 4px; 
+            flex-shrink: 0;
+        }
+        
+        .fine-price { font-weight: 700; font-size: 0.95rem; color: #c0392b; }
+        
+        .btn-pay { 
+            background-color: #27ae60; 
+            color: white; 
+            border: none; 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: background 0.2s; 
+        }
+        .btn-pay:hover { background-color: #219150; }
+
+        /* MODAL STYLES */
+        .modal-overlay { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-content { background-color: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; text-align: center; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3); animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 24px; font-weight: bold; color: #999; cursor: pointer; transition: color 0.2s; }
+        .close-modal:hover { color: #333; }
         .btn-tessera { margin-top: 10px; padding: 10px 20px; background-color: #3f5135; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; font-family: 'Poppins', sans-serif; transition: background 0.3s; }
         #tessera-card { font-family: 'Poppins', sans-serif; background-color: #ffffff; color: #000000; border: 2px solid #000; border-radius: 12px; width: 340px; height: 215px; margin: 25px auto; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.15); box-sizing: border-box; }
         .tessera-header { font-size: 1.1em; font-weight: 600; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #000; padding-bottom: 8px; width: 100%; text-align: center; }
         .tessera-user { font-size: 1.3em; font-weight: 500; text-align: center; word-wrap: break-word; margin-top: 10px; }
         .tessera-barcode { font-family: 'Libre Barcode 39 Text', cursive; font-size: 42px; color: #000; line-height: 1; white-space: nowrap; margin-bottom: 5px; }
-        .modal-actions { display: flex; justify-content: center; gap: 15px; margin-top: 10px; width: 340px; margin-left: auto; margin-right: auto; }
-        .btn-action { padding: 10px 15px; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; font-size: 14px; font-family: 'Poppins', sans-serif; font-weight: 500; flex: 1; transition: all 0.2s ease; }
-        .btn-print { background-color: #3f5135; color: white; border-color: #3f5135; }
-        .btn-download { background-color: #f8f9fa; color: #333; }
+        .modal-actions { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+        .btn-action { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; flex: 1; transition: all 0.2s ease; }
+        .btn-print { background-color: #3f5135; color: white; }
+        .btn-download { background-color: #f0f0f0; color: #333; }
+        
+        .btn-modal-pay { background-color: #27ae60; color: white; }
+        .btn-modal-cancel { background-color: #e74c3c; color: white; }
+
         #notification-banner { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background-color: #222; color: white; padding: 14px 24px; border-radius: 6px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 20px; transition: bottom 0.5s; z-index: 9999; min-width: 250px; justify-content: space-between; }
         #notification-banner.show { bottom: 30px; }
         .notification-text { font-size: 15px; font-weight: 500; }
@@ -372,6 +469,30 @@ function formatCounter($dateTarget) {
                 <div class="edit-row"><input type="text" class="edit-input" disabled value="<?= htmlspecialchars($utente['cognome'] ?? '') ?>"></div>
                 <div class="edit-row"><input type="text" class="edit-input" disabled value="<?= htmlspecialchars($utente['codice_fiscale'] ?? '') ?>"></div>
             </div>
+
+            <?php if (!empty($multe_attive)): ?>
+                <div class="fine-container">
+                    <h4 style="margin:0; color:#c0392b; font-size:0.9rem; border-bottom:1px solid #eee; padding-bottom:5px; width:100%;">
+                        Multe da saldare (<?= count($multe_attive) ?>)
+                    </h4>
+                    <?php foreach ($multe_attive as $m): ?>
+                        <div class="fine-card">
+                            <div class="fine-info">
+                                <span class="fine-title" title="<?= htmlspecialchars($m['titolo']) ?>">
+                                    <?= htmlspecialchars($m['titolo']) ?>
+                                </span>
+                                <span class="fine-meta" title="<?= htmlspecialchars($m['causale']) ?>">
+                                    <?= htmlspecialchars($m['causale']) ?>
+                                </span>
+                            </div>
+                            <div class="fine-actions">
+                                <span class="fine-price">€ <?= number_format($m['importo'], 2) ?></span>
+                                <button class="btn-pay" onclick="apriPagamento(<?= $m['id_multa'] ?>, '<?= number_format($m['importo'], 2) ?>')">Paga</button>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="info_column extend_all">
@@ -388,17 +509,21 @@ function formatCounter($dateTarget) {
                 <h2>Prestiti in corso</h2>
                 <div class="grid">
                     <?php if ($prestiti_attivi): foreach ($prestiti_attivi as $libro):
-                        $scadenza_data = formatCounter($libro['data_scadenza']); ?>
+                        $scadenza_data = formatCounter($libro['data_scadenza']); 
+                        $rinnovi_effettuati = $libro['num_rinnovi'] ?? 0;
+                        ?>
                         <div class="book-item">
                             <a href="./libro?isbn=<?= htmlspecialchars($libro['isbn']) ?>" class="card cover-only"><img src="<?= getCoverPath($libro['isbn']) ?>" alt="Libro"></a>
                             <div class="book-meta" style="color: <?= $scadenza_data[1] ?>;"><?= $scadenza_data[0] ?></div>
                             <div class="mini-actions">
                                 <?php if ($libro['stato_richiesta'] == 'in_attesa'): ?>
                                     <button class="btn-mini btn-mini-pending" disabled>In attesa...</button>
+                                <?php elseif ($rinnovi_effettuati >= 1): ?>
+                                    <button class="btn-mini btn-mini-limit" disabled title="Hai già esteso questo prestito">Limite raggiunto</button>
                                 <?php else: ?>
                                     <form method="POST" action="profilo" style="width:100%;">
                                         <input type="hidden" name="action" value="richiedi_estensione">
-                                        <input type="hidden" name="id_copia" value="<?= $libro['id_copia'] ?>">
+                                        <input type="hidden" name="id_prestito" value="<?= $libro['id_prestito'] ?>">
                                         <input type="hidden" name="scadenza_attuale" value="<?= $libro['data_scadenza'] ?>">
                                         <button type="submit" class="btn-mini btn-mini-action">Estendi (+)</button>
                                     </form>
@@ -450,57 +575,51 @@ function formatCounter($dateTarget) {
                     <?php endif; ?>
                 </div>
             </div>
-
+            
             <div class="section">
                 <h2>Le Mie Statistiche</h2>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
-                        <div style="background: #f4f7f2; padding: 15px; border-radius: 12px; border-left: 4px solid #3f5135;">
-                            <span style="display: block; font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Libri Totali</span>
-                            <div style="display: flex; align-items: baseline; gap: 8px;">
-                                <strong style="font-size: 2rem; color: #3f5135;"><?= $totale_libri_letti ?></strong>
-                                <span style="font-size: 0.9rem; color: #888;">Letti</span>
-                            </div>
-                        </div>
-                        <div style="background: #fef9f4; padding: 15px; border-radius: 12px; border-left: 4px solid #e67e22;">
-                            <span style="display: block; font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Media Mensile</span>
-                            <div style="display: flex; align-items: baseline; gap: 8px;">
-                                <strong style="font-size: 2rem; color: #e67e22;"><?= $media_mensile ?></strong>
-                                <span style="font-size: 0.9rem; color: #888;">Libri/mese</span>
-                            </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                    <div style="background: #f4f7f2; padding: 15px; border-radius: 12px; border-left: 4px solid #3f5135;">
+                        <span style="display: block; font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Libri Totali</span>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <strong style="font-size: 2rem; color: #3f5135;"><?= $totale_libri_letti ?></strong>
+                            <span style="font-size: 0.9rem; color: #888;">Letti</span>
                         </div>
                     </div>
-
-                    <div style="margin-top: 10px;">
-                        <h3 style="font-size: 1rem; margin-bottom: 20px; color: #333; font-weight: 600;">Attività Recente</h3>
-
-                        <?php if ($storico_stat): ?>
-                            <div style="display: flex; flex-direction: column; gap: 15px;">
-                                <?php foreach ($storico_stat as $s):
-                                    // Calcolo percentuale larghezza barra (minimo 5% per visibilità)
-                                    $percentuale = ($max_libri_mese > 0) ? ($s['qta'] / $max_libri_mese) * 100 : 0;
-                                    $percentuale = max($percentuale, 5);
-                                    ?>
-                                    <div style="display: flex; align-items: center; gap: 15px;">
-                                        <div style="width: 70px; font-size: 0.85rem; color: #666; text-align: right;"><?= $s['mese'] ?></div>
-                                        <div style="flex: 1; background: #f0f0f0; height: 12px; border-radius: 6px; overflow: hidden;">
-                                            <div style="width: <?= $percentuale ?>%; background: #3f5135; height: 100%; border-radius: 6px; transition: width 0.5s ease;"></div>
-                                        </div>
-                                        <div style="width: 60px; font-size: 0.85rem; color: #3f5135; font-weight: 600;"><?= $s['qta'] ?> <?= $s['qta'] == 1 ? 'Libro' : 'Libri' ?></div>
+                    <div style="background: #fef9f4; padding: 15px; border-radius: 12px; border-left: 4px solid #e67e22;">
+                        <span style="display: block; font-size: 0.8rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px;">Media Mensile</span>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <strong style="font-size: 2rem; color: #e67e22;"><?= $media_mensile ?></strong>
+                            <span style="font-size: 0.9rem; color: #888;">Libri/mese</span>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <h3 style="font-size: 1rem; margin-bottom: 20px; color: #333; font-weight: 600;">Attività Recente</h3>
+                    <?php if ($storico_stat): ?>
+                        <div style="display: flex; flex-direction: column; gap: 15px;">
+                            <?php foreach ($storico_stat as $s):
+                                $percentuale = ($max_libri_mese > 0) ? ($s['qta'] / $max_libri_mese) * 100 : 0;
+                                $percentuale = max($percentuale, 5);
+                                ?>
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div style="width: 70px; font-size: 0.85rem; color: #666; text-align: right;"><?= $s['mese'] ?></div>
+                                    <div style="flex: 1; background: #f0f0f0; height: 12px; border-radius: 6px; overflow: hidden;">
+                                        <div style="width: <?= $percentuale ?>%; background: #3f5135; height: 100%; border-radius: 6px; transition: width 0.5s ease;"></div>
                                     </div>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <div style="text-align: center; padding: 20px; color: #888; background: #fafafa; border-radius: 12px;">
-                                Nessun dato storico disponibile per generare il grafico.
-                            </div>
-                        <?php endif; ?>
-                    </div>
+                                    <div style="width: 60px; font-size: 0.85rem; color: #3f5135; font-weight: 600;"><?= $s['qta'] ?> <?= $s['qta'] == 1 ? 'Libro' : 'Libri' ?></div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php else: ?>
+                        <div style="text-align: center; padding: 20px; color: #888; background: #fafafa; border-radius: 12px;">Nessun dato storico disponibile per generare il grafico.</div>
+                    <?php endif; ?>
+                </div>
             </div>
-
+            
         </div>
     </div>
-
+    
     <div id="modalTessera" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal" onclick="chiudiTessera()">&times;</span>
@@ -513,6 +632,28 @@ function formatCounter($dateTarget) {
                 <button class="btn-action btn-download" onclick="scaricaPNG()">Scarica PNG</button>
                 <button class="btn-action btn-print" onclick="stampa()">Stampa</button>
             </div>
+        </div>
+    </div>
+
+    <div id="modalPagamento" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="chiudiPagamento()">&times;</span>
+            <h3 style="margin-top:0; color:#333;">Conferma Pagamento</h3>
+            <p style="margin:20px 0; color:#555;">Stai per pagare una multa di:</p>
+            <h2 style="color:#27ae60; margin:0;">€ <span id="payAmountDisplay">0.00</span></h2>
+            
+            <p style="font-size:0.85em; color:#999; margin-top:20px;">
+                Il pagamento sarà simulato e registrato immediatamente nel sistema.
+            </p>
+
+            <form method="POST" action="profilo">
+                <input type="hidden" name="action" value="paga_multa_user">
+                <input type="hidden" name="id_multa" id="payMultaId">
+                <div class="modal-actions">
+                    <button type="button" class="btn-action btn-modal-cancel" onclick="chiudiPagamento()">Annulla</button>
+                    <button type="submit" class="btn-action btn-modal-pay">Conferma Pagamento</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -536,17 +677,16 @@ function formatCounter($dateTarget) {
         const serverMessage = "<?= addslashes($messaggio_alert) ?>";
         if (serverMessage.length > 0) { setTimeout(() => { showNotification(serverMessage); }, 500); }
 
+        // GESTIONE USERNAME AJAX
         const inpUser = document.getElementById('inp-username');
         const rowUser = document.getElementById('row-username');
         const btnUser = document.getElementById('btn-user');
-
         inpUser.addEventListener('input', function() {
             if (this.value !== this.dataset.original) {
                 rowUser.classList.add('changed');
                 btnUser.innerText = "Salva"; btnUser.classList.remove('btn-success-anim');
             } else { rowUser.classList.remove('changed'); }
         });
-
         async function ajaxSaveUsername() {
             const newVal = inpUser.value;
             const formData = new FormData();
@@ -564,22 +704,20 @@ function formatCounter($dateTarget) {
             } catch (error) { showNotification("Errore di connessione."); }
         }
 
+        // GESTIONE EMAIL OTP
         const boxEmailOtp = document.getElementById('box-email-otp');
         const inpEmail = document.getElementById('inp-email');
         const inpOtp = document.getElementById('inp-otp');
         const btnEmailAction = document.getElementById('btn-email-action');
         let emailStep = 1;
-
         function handleEmailInput(input) {
             if (input.value !== input.dataset.original) { boxEmailOtp.classList.add('open'); resetEmailState(); }
             else { boxEmailOtp.classList.remove('open'); }
         }
-
         function resetEmailState() {
             emailStep = 1; btnEmailAction.innerText = "Invia"; btnEmailAction.type = "button";
             inpOtp.disabled = true; inpOtp.classList.add('otp-locked'); inpOtp.value = "";
         }
-
         async function handleEmailAction() {
             if (emailStep === 1) {
                 const formData = new FormData();
@@ -598,10 +736,10 @@ function formatCounter($dateTarget) {
             }
         }
 
-        const modal = document.getElementById('modalTessera');
-        function apriTessera() { modal.style.display = 'flex'; }
-        function chiudiTessera() { modal.style.display = 'none'; }
-        window.onclick = function(event) { if (event.target == modal) { chiudiTessera(); } }
+        // GESTIONE MODAL TESSERA
+        const modalTessera = document.getElementById('modalTessera');
+        function apriTessera() { modalTessera.style.display = 'flex'; }
+        function chiudiTessera() { modalTessera.style.display = 'none'; }
         function stampa() { window.print(); }
         function scaricaPNG() {
             const elemento = document.getElementById("tessera-card");
@@ -611,6 +749,21 @@ function formatCounter($dateTarget) {
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             });
+        }
+
+        // GESTIONE MODAL PAGAMENTO
+        const modalPay = document.getElementById('modalPagamento');
+        function apriPagamento(id, amount) {
+            document.getElementById('payMultaId').value = id;
+            document.getElementById('payAmountDisplay').innerText = amount;
+            modalPay.style.display = 'flex';
+        }
+        function chiudiPagamento() { modalPay.style.display = 'none'; }
+
+        // CHIUSURA MODAL CLICK ESTERNO
+        window.onclick = function(event) {
+            if (event.target == modalTessera) chiudiTessera();
+            if (event.target == modalPay) chiudiPagamento();
         }
     </script>
 
