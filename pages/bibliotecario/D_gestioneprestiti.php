@@ -3,7 +3,7 @@ require_once 'security.php';
 
 // Controllo accessi
 if (!checkAccess('amministratore') && !checkAccess('bibliotecario')) {
-    header('Location: ../index.php');
+    header('Location: /login');
     exit;
 }
 
@@ -24,7 +24,8 @@ if (isset($pdo)) {
                     'id' => $_POST['restituisci_id']
             ]);
 
-            header("Location: dashboard-gestioneprestiti");
+            // ROUTING AGGIORNATO (Whitelist)
+            header("Location: /bibliotecario/dashboard-gestioneprestiti?success=1");
             exit;
         }
 
@@ -65,7 +66,7 @@ if (isset($pdo)) {
 }
 
 $title = "Gestione Prestiti";
-$path = "../";
+$path = "../../"; 
 require_once './src/includes/header.php';
 require_once './src/includes/navbar.php';
 ?>
@@ -101,18 +102,18 @@ require_once './src/includes/navbar.php';
         </div>
         
         <div class="d-flex gap-2">
-            <form method="GET" class="d-flex">
+            <form method="GET" action="/bibliotecario/dashboard-gestioneprestiti" class="d-flex">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
                     <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Cerca utente o libro..." value="<?= htmlspecialchars($searchTerm) ?>">
                     <button class="btn btn-outline-secondary" type="submit">Cerca</button>
                 </div>
                 <?php if(!empty($searchTerm)): ?>
-                    <a href="dashboard-gestioneprestiti.php" class="btn btn-light ms-2" title="Reset"><i class="bi bi-x-lg"></i></a>
+                    <a href="/bibliotecario/dashboard-gestioneprestiti" class="btn btn-light ms-2" title="Reset"><i class="bi bi-x-lg"></i></a>
                 <?php endif; ?>
             </form>
 
-            <a href="../bibliotecario/dashboard-aggiuntaprestiti" class="btn btn-primary shadow-sm" style="background-color: var(--accent-primary); border:none;">
+            <a href="/bibliotecario/dashboard-aggiuntaprestiti" class="btn btn-primary shadow-sm" style="background-color: var(--accent-primary); border:none;">
                 <i class="bi bi-plus-lg me-2"></i>Nuovo Prestito
             </a>
         </div>
@@ -187,7 +188,7 @@ require_once './src/includes/navbar.php';
                                 <td class="text-end pe-4">
                                     <div class="d-flex justify-content-end gap-2 align-items-center">
                                         
-                                        <a href="gestione-multe?id_prestito=<?= $p['id_prestito'] ?>" class="btn btn-sm btn-outline-warning text-dark fw-bold" title="Gestisci Multe">
+                                        <a href="/bibliotecario/gestione-multe?id_prestito=<?= $p['id_prestito'] ?>" class="btn btn-sm btn-outline-warning text-dark fw-bold" title="Gestisci Multe">
                                             <i class="bi bi-cash-coin me-1"></i> Multe
                                         </a>
 
