@@ -319,35 +319,134 @@ foreach ($storico_stat as $s) {
     if ($s['qta'] > $max_libri_mese) $max_libri_mese = $s['qta'];
 }
 
-$badges = [];
+/* -----------------------------------------------------------
+   LOGICA BADGE
+----------------------------------------------------------- */
+$badges_to_display = [];
+$unlocked_badges_ids = [];
+$user_stats = [];
 
-if (isset($uid) && $uid) {
-    try {
-        $stm = $pdo->prepare("
-            SELECT b.*, ub.livello
-            FROM badge b
-            JOIN utente_badge ub ON b.id_badge = ub.id_badge
-            WHERE ub.codice_alfanumerico = ?
-            ORDER BY ub.livello DESC, b.nome ASC
-        ");
-        $stm->execute([$uid]);
-        $badges = $stm->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        $messaggio_db = "Errore caricamento badge: " . $e->getMessage();
+try {
+    // 1. Recupero statistiche utente per calcolo progressi
+    $user_stats['libri_letti'] = $totale_libri_letti;
+
+    $stm = $pdo->prepare("SELECT COUNT(*) FROM prestiti WHERE codice_alfanumerico = ? AND data_restituzione IS NOT NULL AND data_restituzione <= data_scadenza");
+    $stm->execute([$uid]);
+    $user_stats['restituzioni_puntuali'] = $stm->fetchColumn();
+
+    $stm = $pdo->prepare("SELECT COUNT(*) FROM multe m JOIN prestiti p ON m.id_prestito = p.id_prestito WHERE p.codice_alfanumerico = ?");
+    $stm->execute([$uid]);
+    $user_stats['numero_multe'] = $stm->fetchColumn();
+
+    $stm = $pdo->prepare("SELECT COUNT(*) FROM recensioni WHERE codice_alfanumerico = ?");
+    $stm->execute([$uid]);
+    $user_stats['recensioni_scritte'] = $stm->fetchColumn();
+
+    $stm = $pdo->prepare("SELECT COUNT(*) FROM prestiti WHERE codice_alfanumerico = ?");
+    $stm->execute([$uid]);
+    $user_stats['prestiti_effettuati'] = $stm->fetchColumn();
+
+    // 2. Recupero ID dei badge già sbloccati dall'utente (dal DB)
+    $stm = $pdo->prepare("SELECT id_badge FROM utente_badge WHERE codice_alfanumerico = ?");
+    $stm->execute([$uid]);
+    $unlocked_badges_ids = $stm->fetchAll(PDO::FETCH_COLUMN, 0);
+
+    // 3. Recupero di TUTTI i badge disponibili
+    $stm = $pdo->query("SELECT * FROM badge ORDER BY id_badge ASC");
+    $all_badges = $stm->fetchAll(PDO::FETCH_ASSOC);
+
+    // 4. Raggruppamento per tipo e selezione del badge da mostrare
+    $badges_by_type = [];
+    foreach ($all_badges as $b) {
+        $type = $b['tipo'];
+        if (!isset($badges_by_type[$type])) {
+            $badges_by_type[$type] = [];
+        }
+        $badges_by_type[$type][] = $b;
     }
-}
-function badgeIconHtmlProfile(array $badge) {
-    $icon = $badge['icona'] ?? null;
-    // Primo tentativo: file in public/badges/
-    $localPath = "../public/assets/badge/" . $icon;
-    $webPath = "./public/assets/badge/" . $icon;
-    if ($icon) {
-        return '<img src="' . htmlspecialchars($webPath) . '" alt="' . htmlspecialchars($badge['nome']) . '" class="badge-img">';
+
+    foreach ($badges_by_type as $type => $badges_list) {
+        // ORDINAMENTO
+        // Per 'numero_multe' il migliore è quello con target più BASSO (0 è meglio di 5).
+        // Per gli altri, il migliore è quello con target più ALTO (100 è meglio di 1).
+
+        usort($badges_list, function($a, $b) use ($type) {
+            if ($type === 'numero_multe') {
+                // Decrescente per multe (es. 5, 3, 1, 0)
+                // Così iterando troviamo prima i "facili" (5) e poi i "difficili" (0)
+                // E sovrascriviamo $highest_unlocked man mano che troviamo quelli soddisfatti.
+                return $b['target_numerico'] - $a['target_numerico'];
+            } else {
+                // Crescente per altri (es. 1, 10, 50, 100)
+                // Check 1: OK. Highest = Bronzo.
+                // Check 100: OK. Highest = Platino.
+                return $a['target_numerico'] - $b['target_numerico'];
+            }
+        });
+
+        $highest_unlocked = null;
+        $next_badge = null;
+
+        foreach ($badges_list as $b) {
+            $is_unlocked_db = in_array($b['id_badge'], $unlocked_badges_ids);
+            $is_unlocked_dynamic = false;
+
+            // Calcolo dinamico
+            if (isset($user_stats[$type])) {
+                $currentVal = $user_stats[$type];
+                $target = intval($b['target_numerico']);
+
+                if ($type === 'numero_multe') {
+                    // Sbloccato se ho MENO o UGUALI multe del target
+                    if ($currentVal <= $target) {
+                        $is_unlocked_dynamic = true;
+                    }
+                } else {
+                    // Sbloccato se ho PIÙ o UGUALI azioni del target
+                    if ($currentVal >= $target) {
+                        $is_unlocked_dynamic = true;
+                    }
+                }
+            }
+
+            if ($is_unlocked_db || $is_unlocked_dynamic) {
+                $highest_unlocked = $b;
+                $highest_unlocked['is_unlocked'] = true;
+            } else {
+                // Il primo che trovo NON sbloccato è il mio prossimo obiettivo
+                if ($next_badge === null) {
+                    $next_badge = $b;
+                }
+            }
+        }
+
+        // Costruiamo l'oggetto da visualizzare
+        $display_item = [];
+
+        if ($highest_unlocked) {
+            $display_item = $highest_unlocked;
+            if ($next_badge) {
+                $display_item['next_badge'] = $next_badge;
+            }
+        } else {
+            // Nessuno sbloccato. Mostriamo il primo della lista (il più facile)
+            if (!empty($badges_list)) {
+                $first_badge = $badges_list[0];
+                $first_badge['is_unlocked'] = false;
+                $display_item = $first_badge;
+                $display_item['next_badge'] = $first_badge;
+            }
+        }
+
+        if (!empty($display_item)) {
+            $badges_to_display[] = $display_item;
+        }
     }
-    // Non uso SVG inline qui per sicurezza — fallback lettera
-    $letter = strtoupper(substr($badge['nome'] ?? 'B', 0, 1));
-    return '<div class="badge-placeholder">' . htmlspecialchars($letter) . '</div>';
+
+} catch (PDOException $e) {
+    $messaggio_alert = "Errore caricamento badge: " . $e->getMessage();
 }
+
 
 /* ----- FUNZIONI UTILI ----- */
 function getCoverPath(string $isbn): string {
@@ -373,6 +472,129 @@ $page_css = "./public/css/style_profilo.css";
 require './src/includes/header.php';
 require './src/includes/navbar.php';
 ?>
+    <style>
+        /* Stili per la nuova sezione badge */
+        .badge-grid-profile {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 50px; /* Aumentato considerevolmente */
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        .badge-card-profile {
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .badge-card-profile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        .badge-card-profile.locked {
+            background-color: #f9f9f9;
+        }
+
+        .badge-card-profile.locked .badge-img-profile {
+            filter: grayscale(100%) opacity(0.6);
+        }
+
+        .badge-img-container-profile {
+            width: 120px;
+            height: 120px;
+            margin-bottom: 20px;
+        }
+
+        .badge-img-profile {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            transition: filter 0.3s;
+        }
+
+        .badge-title-profile {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .badge-desc-profile {
+            font-size: 0.9rem;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .progress-container-profile {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar-profile {
+            height: 100%;
+            background-color: #3f5135;
+            border-radius: 10px;
+        }
+
+        .progress-text-profile {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .status-badge-profile {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-unlocked {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-locked {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+
+        .next-badge-info {
+            margin-top: auto;
+            width: 100%;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .next-badge-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <div class="info_line">
@@ -384,50 +606,50 @@ require './src/includes/navbar.php';
             <form action="profilo" method="post" enctype="multipart/form-data" id="form-pfp">
                 <input type="hidden" name="submit_pfp" value="1">
                 <input type="file" name="pfp_upload" id="pfp_upload" accept="image/png, image/jpeg" style="display:none;" onchange="document.getElementById('form-pfp').submit()">
-                <div class="pfp_wrapper" onclick="document.getElementById('pfp_upload').click()">
+                <div class="pfp-wrapper" onclick="document.getElementById('pfp_upload').click()">
                     <img class="info_pfp" alt="Foto Profilo" src="<?= $pfpPath . '?v=' . time() ?>">
-                    <div class="pfp_overlay">
-                        <span class="pfp_text">Modifica</span>
+                    <div class="pfp-overlay">
+                        <span class="pfp-text">Modifica</span>
                     </div>
                 </div>
             </form>
 
-            <button class="btn_tessera" onclick="apriTessera()">Visualizza Tessera</button>
+            <button class="btn-tessera" onclick="apriTessera()">Visualizza Tessera</button>
 
             <div class="edit-container-wrapper">
-                <div class="edit_row" id="row-username">
-                    <input type="text" id="inp-username" class="edit_input" value="<?= htmlspecialchars($utente['username'] ?? '') ?>" data-original="<?= htmlspecialchars($utente['username'] ?? '') ?>" placeholder="Username">
-                    <button type="button" id="btn-user" class="btn_slide" onclick="ajaxSaveUsername()">Salva</button>
+                <div class="edit-row" id="row-username">
+                    <input type="text" id="inp-username" class="edit-input" value="<?= htmlspecialchars($utente['username'] ?? '') ?>" data-original="<?= htmlspecialchars($utente['username'] ?? '') ?>" placeholder="Username">
+                    <button type="button" id="btn-user" class="btn-slide" onclick="ajaxSaveUsername()">Salva</button>
                 </div>
-                <div class="edit_row">
-                    <input type="email" id="inp-email" class="edit_input" value="<?= htmlspecialchars($utente['email'] ?? '') ?>" data-original="<?= htmlspecialchars($utente['email'] ?? '') ?>" placeholder="Email" oninput="handleEmailInput(this)">
+                <div class="edit-row">
+                    <input type="email" id="inp-email" class="edit-input" value="<?= htmlspecialchars($utente['email'] ?? '') ?>" data-original="<?= htmlspecialchars($utente['email'] ?? '') ?>" placeholder="Email" oninput="handleEmailInput(this)">
                 </div>
                 <form method="post" id="box-email-otp" style="display:none; width:100%;">
-                    <input type="text" name="otp_code" id="inp-otp" class="edit_input" placeholder="Codice verifica" disabled autocomplete="off">
-                    <button type="button" id="btn-email-action" class="btn_tessera" style="margin-top:10px;" onclick="handleEmailAction()">Invia Codice</button>
+                    <input type="text" name="otp_code" id="inp-otp" class="edit-input" placeholder="Codice verifica" disabled autocomplete="off">
+                    <button type="button" id="btn-email-action" class="btn-tessera" style="margin-top:10px;" onclick="handleEmailAction()">Invia Codice</button>
                     <input type="hidden" name="confirm_email_final" value="1">
                 </form>
-                <div class="edit_row" id="row-livello">
-                    <input type="number" min="0" max="2" id="inp-livello" class="edit_input" value="<?= $utente['livello_privato'] ?? '' ?>" data-original="<?= $utente['livello_privato'] ?? '' ?>" placeholder="Livello privacy (0-2)">
-                    <button type="button" id="btn-livello" class="btn_slide" onclick="ajaxSaveLivello()">Salva</button>
+                <div class="edit-row" id="row-livello">
+                    <input type="number" min="0" max="2" id="inp-livello" class="edit-input" value="<?= $utente['livello_privato'] ?? '' ?>" data-original="<?= $utente['livello_privato'] ?? '' ?>" placeholder="Livello privacy (0-2)">
+                    <button type="button" id="btn-livello" class="btn-slide" onclick="ajaxSaveLivello()">Salva</button>
                 </div>
-                <div class="edit_row"><input type="text" class="edit_input" disabled value="<?= htmlspecialchars($utente['nome'] ?? '') ?>"></div>
-                <div class="edit_row"><input type="text" class="edit_input" disabled value="<?= htmlspecialchars($utente['cognome'] ?? '') ?>"></div>
-                <div class="edit_row"><input type="text" class="edit_input" disabled value="<?= htmlspecialchars($utente['codice_fiscale'] ?? '') ?>"></div>
+                <div class="edit-row"><input type="text" class="edit-input" disabled value="<?= htmlspecialchars($utente['nome'] ?? '') ?>"></div>
+                <div class="edit-row"><input type="text" class="edit-input" disabled value="<?= htmlspecialchars($utente['cognome'] ?? '') ?>"></div>
+                <div class="edit-row"><input type="text" class="edit-input" disabled value="<?= htmlspecialchars($utente['codice_fiscale'] ?? '') ?>"></div>
             </div>
 
             <?php if (!empty($multe_attive)): ?>
-                <div class="fine_container">
-                    <h4 class="fine_header_title">Da Saldare</h4>
+                <div class="fine-container">
+                    <h4 class="fine-header-title">Da Saldare</h4>
                     <?php foreach ($multe_attive as $m): ?>
-                        <div class="fine_card">
-                            <div class="fine_info">
-                                <span class="fine_title"><?= htmlspecialchars($m['titolo']) ?></span>
-                                <span class="fine_meta"><?= htmlspecialchars($m['causale']) ?></span>
+                        <div class="fine-card">
+                            <div class="fine-info">
+                                <span class="fine-title"><?= htmlspecialchars($m['titolo']) ?></span>
+                                <span class="fine-meta"><?= htmlspecialchars($m['causale']) ?></span>
                             </div>
                             <div style="text-align:right;">
-                                <div class="fine_price">€ <?= number_format($m['importo'], 2) ?></div>
-                                <button class="btn_pay" onclick="apriPagamento(<?= $m['id_multa'] ?>, '<?= number_format($m['importo'], 2) ?>')">Paga</button>
+                                <div class="fine-price">€ <?= number_format($m['importo'], 2) ?></div>
+                                <button class="btn-pay" onclick="apriPagamento(<?= $m['id_multa'] ?>, '<?= number_format($m['importo'], 2) ?>')">Paga</button>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -439,27 +661,27 @@ require './src/includes/navbar.php';
 
             <div class="section">
                 <h2>Panoramica</h2>
-                <div class="stats_grid">
-                    <div class="stat_card_total">
-                        <span class="stat_label">Libri Letti</span>
-                        <strong class="stat_value_total"><?= $totale_libri_letti ?></strong>
+                <div class="stats-grid">
+                    <div class="stat-card-total">
+                        <span class="stat-label">Libri Letti</span>
+                        <strong class="stat-value-total"><?= $totale_libri_letti ?></strong>
                     </div>
                     <div class="stat-card-monthly">
-                        <span class="stat_label">Media Mensile</span>
-                        <strong class="stat_value_monthly"><?= $media_mensile ?></strong>
+                        <span class="stat-label">Media Mensile</span>
+                        <strong class="stat-value-monthly"><?= $media_mensile ?></strong>
                     </div>
                 </div>
                 <?php if ($storico_stat): ?>
-                    <div class="chart_container">
+                    <div class="chart-container">
                         <?php foreach ($storico_stat as $s):
                             $percentuale = ($max_libri_mese > 0) ? ($s['qta'] / $max_libri_mese) * 100 : 0;
                             ?>
-                            <div class="chart_row">
-                                <div class="chart_label"><?= $s['mese'] ?></div>
-                                <div class="chart_bar_bg">
-                                    <div class="chart_bar_fill" style="width: <?= $percentuale ?>%;"></div>
+                            <div class="chart-row">
+                                <div class="chart-label"><?= $s['mese'] ?></div>
+                                <div class="chart-bar-bg">
+                                    <div class="chart-bar-fill" style="width: <?= $percentuale ?>%;"></div>
                                 </div>
-                                <div class="chart_value"><?= $s['qta'] ?></div>
+                                <div class="chart-value"><?= $s['qta'] ?></div>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -525,21 +747,69 @@ require './src/includes/navbar.php';
                 </div>
             </div>
 
-            <?php if (!empty($badges)): ?>
-                <div class="section">
-                    <h2>Badge</h2>
-                    <div class="grid">
-                        <?php foreach ($badges as $b): ?>
-                            <div class="book-item">
-                                <?= badgeIconHtmlProfile($b) ?>
-                                <div class="book-meta" style="text-align:center; margin-top:5px;">
-                                    <?= htmlspecialchars($b['nome']) ?>
-                                </div>
+            <div class="section">
+                <h2>I tuoi Badge</h2>
+                <div class="badge-grid-profile">
+                    <?php foreach ($badges_to_display as $b): ?>
+                        <?php
+                        $idBadge = intval($b['id_badge']);
+                        $isUnlocked = $b['is_unlocked'];
+
+                        $imgPath = $path . 'public/assets/badge/' . $idBadge . '.png';
+
+                        $tipo = $b['tipo'] ?? '';
+                        $target = intval($b['target_numerico']);
+                        $currentVal = 0;
+
+                        if (isset($user_stats[$tipo])) {
+                            $currentVal = $user_stats[$tipo];
+                        }
+
+                        // Logica per il prossimo badge
+                        $nextBadge = $b['next_badge'] ?? null;
+                        $progressPercent = 0;
+                        $nextTarget = 0;
+
+                        if ($nextBadge) {
+                            $nextTarget = intval($nextBadge['target_numerico']);
+                            if ($tipo === 'numero_multe') {
+                                // Per le multe non mostriamo la barra di progresso verso il prossimo
+                                // perché il target è inferiore al valore attuale
+                            } else {
+                                if ($nextTarget > 0) {
+                                    $progressPercent = min(100, ($currentVal / $nextTarget) * 100);
+                                }
+                            }
+                        }
+                        ?>
+                        <a href="./badge?id=<?= $idBadge ?>" class="badge-card-profile <?= $isUnlocked ? '' : 'locked' ?>">
+                            <?php if ($isUnlocked): ?>
+                                <div class="status-badge-profile status-unlocked">Sbloccato</div>
+                            <?php else: ?>
+                                <div class="status-badge-profile status-locked">Bloccato</div>
+                            <?php endif; ?>
+
+                            <div class="badge-img-container-profile">
+                                <img src="<?= $imgPath ?>" alt="<?= htmlspecialchars($b['nome']) ?>" class="badge-img-profile" onerror="this.style.display='none'">
                             </div>
-                        <?php endforeach; ?>
-                    </div>
+                            <div class="badge-title-profile"><?= htmlspecialchars($b['nome']) ?></div>
+                            <div class="badge-desc-profile"><?= htmlspecialchars($b['descrizione']) ?></div>
+
+                            <?php if ($nextBadge && $tipo !== 'numero_multe'): ?>
+                                <div class="next-badge-info">
+                                    <div class="next-badge-label">Prossimo: <?= htmlspecialchars($nextBadge['nome']) ?></div>
+                                    <div class="progress-container-profile">
+                                        <div class="progress-bar-profile" style="width: <?= $progressPercent ?>%;"></div>
+                                    </div>
+                                    <div class="progress-text-profile">
+                                        <?= $currentVal ?> / <?= $nextTarget ?> (<?= floor($progressPercent) ?>%)
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </a>
+                    <?php endforeach; ?>
                 </div>
-            <?php endif; ?>
+            </div>
 
             <div class="section">
                 <h2>Storico letture</h2>
@@ -556,7 +826,7 @@ require './src/includes/navbar.php';
     </div>
 
     <div id="modalTessera" class="modal-overlay">
-        <div class="modal_content">
+        <div class="modal-content">
             <div id="tessera-card">
                 <div class="tessera-header">Biblioteca Scrum</div>
                 <div class="tessera-label">Nome</div>
@@ -565,15 +835,15 @@ require './src/includes/navbar.php';
                 <div class="tessera-value"><?= htmlspecialchars($utente['codice_alfanumerico'] ?? $uid) ?></div>
                 <div class="tessera-barcode">*<?= strtoupper(htmlspecialchars($utente['codice_alfanumerico'] ?? $uid)) ?>*</div>
             </div>
-            <div class="modal_actions">
-                <button class="btn_action btn_print" onclick="chiudiTessera()">Chiudi</button>
-                <button class="btn_action btn_download" onclick="scaricaPNG()">Scarica</button>
+            <div class="modal-actions">
+                <button class="btn-action btn-print" onclick="chiudiTessera()">Chiudi</button>
+                <button class="btn-action btn-download" onclick="scaricaPNG()">Scarica</button>
             </div>
         </div>
     </div>
 
     <div id="modalPagamento" class="modal-overlay">
-        <div class="modal_content">
+        <div class="modal-content">
             <h3 style="font-family:'Young Serif', serif; color:var(--color_text_dark_green); margin-bottom:20px;">Conferma Pagamento</h3>
             <p style="margin-bottom:10px;">Importo da saldare</p>
             <h2 style="font-family:'Young Serif', serif; font-size:2.5rem; margin:0 0 30px 0;">€ <span id="payAmountDisplay">0.00</span></h2>
@@ -581,9 +851,9 @@ require './src/includes/navbar.php';
             <form method="POST" action="profilo">
                 <input type="hidden" name="action" value="paga_multa_user">
                 <input type="hidden" name="id_multa" id="payMultaId">
-                <div class="modal_actions">
-                    <button type="button" class="btn_action btn_modal_cancel" onclick="chiudiPagamento()">Annulla</button>
-                    <button type="submit" class="btn_action btn_modal_pay">Conferma</button>
+                <div class="modal-actions">
+                    <button type="button" class="btn-action btn-modal-cancel" onclick="chiudiPagamento()">Annulla</button>
+                    <button type="submit" class="btn-action btn-modal-pay">Conferma</button>
                 </div>
             </form>
         </div>
