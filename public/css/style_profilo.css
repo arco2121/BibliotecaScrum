@@ -366,7 +366,7 @@
     padding: 12px 24px; border: none; cursor: pointer; border-radius: 8px;
     font-family: inherit; font-size: 0.9rem; font-weight: 600;
 }
-.btn_download, .btn_modal_pay { background: var(--color_text_dark_green); color: #fff; }
+.btn_download, .btn_modal_pay { background: var(--color_accent_dark); color: #fff; }
 .btn_print, .btn_modal_cancel { background: transparent; color: #666; border: 1px solid #ddd; }
 
 

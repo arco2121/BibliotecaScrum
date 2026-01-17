@@ -835,8 +835,8 @@ require './src/includes/navbar.php';
                 <div class="tessera-barcode">*<?= strtoupper(htmlspecialchars($utente['codice_alfanumerico'] ?? $uid)) ?>*</div>
             </div>
             <div class="modal_actions">
-                <button class="btn_action btn-print" onclick="chiudiTessera()">Chiudi</button>
-                <button class="btn_action btn-download" onclick="scaricaPNG()">Scarica</button>
+                <button class="btn_action btn_print" onclick="chiudiTessera()">Chiudi</button>
+                <button class="btn_action btn_download" onclick="scaricaPNG()">Scarica</button>
             </div>
         </div>
     </div>
