@@ -234,11 +234,6 @@ require_once './src/includes/header.php';
 require_once './src/includes/navbar.php';
 ?>
 
-    <div id="loading_overlay">
-        <div class="spinner"></div>
-        <div class="loading_text">Elaborazione...</div>
-    </div>
-
     <div class="dashboard_container_larger">
 
         <div class="page_header">
