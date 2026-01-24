@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ins = $pdo->prepare("INSERT INTO tokenemail (token, codice_alfanumerico) VALUES (?, ?)");
                 $ins->execute([$token, $row['codice_alfanumerico']]);
 
-                $baseUrl = 'https://unexploratory-franchesca-lipochromic.ngrok-free.dev/verifica';
+                $baseUrl = 'https://overgenially-unappareled-ross.ngrok-free.dev/verifica';
                 $verifyLink = $baseUrl . '?token=' . urlencode($token);
 
                 $mail = getMailer();
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                <p><a href=\"" . htmlspecialchars($verifyLink) . "\">Conferma email</a></p>
                                <br>
                                <p>Inviato da: Biblioteca Scrum Itis Rossi</p>
-                               <p><a href='https://unexploratory-franchesca-lipochromic.ngrok-free.dev/'>Biblioteca Itis Rossi</a></p>";
+                               <p><a href='https://overgenially-unappareled-ross.ngrok-free.dev/'>Biblioteca Itis Rossi</a></p>";
                 $mail->send();
 
                 $error_msg = "Conferma l'email prima di accedere. Ti è stato inviato un nuovo codice!";

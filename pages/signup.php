@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ins->execute([$token, $nuovo_id]);
 
             // INVIO EMAIL
-            $baseUrl = 'https://unexploratory-franchesca-lipochromic.ngrok-free.dev/verifica';
+            $baseUrl = 'https://overgenially-unappareled-ross.ngrok-free.dev/verifica';
             $verifyLink = $baseUrl . '?token=' . urlencode($token);
 
             $mail = getMailer();
