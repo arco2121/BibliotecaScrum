@@ -1,0 +1,11 @@
+.timer_con {
+    text-align: center;
+    background-color: var(--color_accent_ligth_low);
+    border-radius: 50px;
+    box-shadow: 0 4px 6px rgba(63, 81, 53, 0.15);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    border: 5px solid var(--color_accent_dark);
+    padding: 10px 20px;
+}

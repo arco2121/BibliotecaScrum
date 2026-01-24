@@ -43,6 +43,8 @@ $whitelist = [
     '/bibliotecario/dashboard-richieste' => 'pages/bibliotecario/D_richieste.php',
     '/bibliotecario/gestione-multe' => 'pages/bibliotecario/gestione-multe.php',
 
+    //temp
+    '/timer' => 'pages/TODELETE_Test_Timer.php',
 ];
 
 
