@@ -83,6 +83,13 @@ if(isset($_POST["logout"])){
                     value="<?= isset($_GET['search']) ? $_GET['search'] : '' ?>">
             </form>
         </div>
+        <div>
+            <form  action="<?= $path ?>game" method="POST">
+                <button type="submit">
+                    <img src="<?= $path ?>public/assets/icon_play.png" alt="Gioca">
+                </button>
+            </form>
+        </div>
     </div>
     
     <div class="navbar_rigth">
