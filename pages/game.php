@@ -17,15 +17,30 @@ if (isset($pdo)) {
         // Se l'utente è loggato, usiamo il suo nome nel DB, altrimenti "Utente Web"
         $nome_visitatore = isset($_SESSION['username']) ? $_SESSION['username'] . ' (Logged)' : 'Utente Web';
 
-        $stmt = $pdo->prepare('select l.titolo, a.nome, a.cognome, ct.categoria  from copie as c
+        $query = 'select distinct l.isbn, l.titolo, a.nome, a.cognome, ct.categoria  from copie as c
                                 join libri as l on c.isbn = l.isbn
                                 join autore_libro as al on al.isbn = l.isbn 
                                 join autori as a on a.id_autore = al.id_autore 
                                 join libro_categoria as cl on cl.isbn = l.isbn
                                 join categorie as ct on ct.id_categoria = cl.id_categoria
-                                order by rand() limit 4;'
-                            );
-        $stmt->execute();
+                                order by rand() limit 4;';
+        $stmtCons = $pdo->prepare($query);
+
+        $stmtCons->execute();
+        $output = $stmtCons->fetchAll(PDO::FETCH_ASSOC);
+
+        $readyarr[0] = $randomarr[0]= array($output[0]["isbn"], $output[1]["isbn"], $output[2]["isbn"], $output[3]["isbn"]);
+        $readyarr[1] =$randomarr[1]= array($output[0]["titolo"], $output[1]["titolo"], $output[2]["titolo"], $output[3]["titolo"]);
+        $readyarr[2] =$randomarr[2]= array($output[0]["nome"]." ".$output[0]["cognome"], $output[1]["nome"]." ".$output[1]["cognome"], $output[2]["nome"]." ".$output[2]["cognome"], $output[3]["nome"]." ".$output[3]["cognome"]);
+        $readyarr[3] =$randomarr[3]= array($output[0]["categoria"], $output[1]["categoria"], $output[2]["categoria"], $output[3]["categoria"]);
+        shuffle($randomarr[0]);
+        shuffle($randomarr[1]);
+        shuffle($randomarr[2]);
+        shuffle($randomarr[3]);
+
+        print_r($randomarr);
+        echo "<br>";
+        print_r($readyarr);
     } catch (PDOException $e) {
         $messaggio_db = 'Errore Scrittura: ' . $e->getMessage();
         $class_messaggio = 'error';
@@ -47,12 +62,14 @@ require './src/includes/navbar.php';
 
 <div>
     <div id='bookscover'>
-        <div id='book1'></div>
-        <div id='book2'></div>
-        <div id='book3'></div>
-        <div id='book4'></div>
+        <div id='book1'><?= $randomarr[0][0] ?></div>
+        <div id='book2'><?= $randomarr[0][1] ?></div>
+        <div id='book3'><?= $randomarr[0][2] ?></div>
+        <div id='book4'><?= $randomarr[0][3] ?></div>
     </div>
-
+    
+    <br>
+    
     <div id='playcontainer'>
         <div id='cont1'></div>
         <div id='cont2'></div>
@@ -60,25 +77,31 @@ require './src/includes/navbar.php';
         <div id='cont4'></div>
     </div>
 
+    <br>
+
     <div id='titoli'>
-        <div id='title1'></div>
-        <div id='title2'></div>
-        <div id='title3'></div>
-        <div id='title4'></div>
+        <div id='title1'><?= $randomarr[1][0] ?></div>
+        <div id='title2'><?= $randomarr[1][1] ?></div>
+        <div id='title3'><?= $randomarr[1][2] ?></div>
+        <div id='title4'><?= $randomarr[1][3] ?></div>
     </div>
+
+    <br>
     
     <div id='autori'>
-        <div id='auth1'></div>
-        <div id='auth2'></div>
-        <div id='auth3'></div>
-        <div id='auth4'></div>
+        <div id='auth1'><?= $randomarr[2][0] ?></div>
+        <div id='auth2'><?= $randomarr[2][1] ?></div>
+        <div id='auth3'><?= $randomarr[2][2] ?></div>
+        <div id='auth4'><?= $randomarr[2][3] ?></div>
     </div>
+
+    <br>
     
     <div id='generi'>
-        <div id='gen1'></div>
-        <div id='gen2'></div>
-        <div id='gen3'></div>
-        <div id='gen4'></div>
+        <div id='gen1'><?= $randomarr[3][0] ?></div>
+        <div id='gen2'><?= $randomarr[3][1] ?></div>
+        <div id='gen3'><?= $randomarr[3][2] ?></div>
+        <div id='gen4'><?= $randomarr[3][3] ?></div>
     </div>
 </div>
 
